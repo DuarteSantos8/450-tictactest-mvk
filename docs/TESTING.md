@@ -20,6 +20,8 @@ test {
 Tests ausführen: `./gradlew test`
 Report danach unter: `build/reports/tests/test/index.html`
 
+Der Parameterized Test braucht keine zusätzliche Abhängigkeit: `org.junit.jupiter:junit-jupiter` ist ein Sammel-Artefakt und enthält `junit-jupiter-params` bereits.
+
 ## 2. Dummy-Tests
 
 Datei: [`DummyTest.java`](../src/test/java/ch/bbw/m450/tictactoe/DummyTest.java)
@@ -30,35 +32,94 @@ Zweck: rein technischer Nachweis, dass JUnit 5 und AssertJ korrekt eingebunden s
 | `dummyJUnitTest` | zwei Ganzzahlen 1 und 1 | die Summe gebildet wird | ist das Ergebnis 2 (geprüft mit JUnit `assertTrue`) |
 | `dummyAssertJTest` | zwei Ganzzahlen 1 und 1 | die Summe gebildet wird | ist das Ergebnis 2 (geprüft mit AssertJ `assertThat(...).isEqualTo(...)`) |
 
-## 3. TicTacToe-Tests (Given-When-Then)
+## 3. Fixtures und Helper
 
 Datei: [`TicTacToeMainTest.java`](../src/test/java/ch/bbw/m450/tictactoe/TicTacToeMainTest.java)
-Es sind 7 Tests vorhanden (mehr als die geforderten 5), alle über AssertJ (`WithAssertions`).
+
+Der Testcode benutzt zwei Arten von Fixtures – also festen Ausgangszuständen, die jeder Test gleich vorfindet – und einen Helper. Alle drei stehen in der Testklasse selbst, weil sie ausserhalb der Tests niemandem nützen.
+
+**Board-Fixtures** – benannte Konstanten statt magischer Strings mitten im Test. Ein Brett wird als Muster geschrieben, `X` = Kreuz, `O` = Kreis, `.` = leeres Feld; die Leerzeichen trennen nur die drei Zeilen:
+
+```java
+private static final String DIAGONAL_X_WINS = "XOO OX. XOX";
+private static final String DRAW_BOARD = "XOX XXO OXO";
+```
+
+**Spieler-Fixture** – `@BeforeEach setUp()` legt vor *jeder* Testmethode zwei frische `GreedyPlayer` an, damit kein Test von einer Partie eines anderen Tests beeinflusst wird:
+
+```java
+@BeforeEach
+void setUp() {
+    xPlayer = new GreedyPlayer();
+    oPlayer = new GreedyPlayer();
+}
+```
+
+**Helper** – `toBoard(...)` übersetzt so ein Muster in das `Stone[]` mit neun Feldern, das `TicTacToeMain.isWin(...)` erwartet. Ohne den Helper müsste in jedem Test ein Array von Hand aufgezählt werden, was das Brett unlesbar macht. Passt die Länge nicht oder steht ein unbekanntes Zeichen im Muster, wirft der Helper eine `IllegalArgumentException`.
+
+## 4. Parameterized Test
+
+Die Sieg-Erkennung wird nicht mehr mit einem Test pro Brett geprüft, sondern mit *einer* Testmethode über viele Board-Konstellationen:
+
+```java
+@ParameterizedTest(name = "{1} on \"{0}\" -> {2}")
+@MethodSource("boardConstellations")
+void given_aBoard_when_isWinIsChecked_then_returnsWhetherThatColorHasALine(String pattern, Stone color,
+        boolean expectedToWin) {
+    var board = toBoard(pattern);
+
+    var winning = TicTacToeMain.isWin(board, color);
+
+    assertThat(winning).isEqualTo(expectedToWin);
+}
+```
+
+`@MethodSource("boardConstellations")` verweist auf eine statische Methode, die einen `Stream<Arguments>` liefert. Jedes `Arguments.of(muster, farbe, erwartet)` wird zu einem eigenen Testlauf, dessen drei Werte der Reihe nach in den drei Parametern landen. Aus 12 Einträgen werden also 12 Testläufe, die im Report einzeln erscheinen – dank `name = "{1} on \"{0}\" -> {2}"` mit lesbarem Titel wie `CROSS on "XXX ... ..." -> true`. Schlägt einer fehl, steht sofort da, welches Brett schuld ist.
+
+Geprüfte Konstellationen:
+
+| # | Muster | geprüfte Farbe | Erwartung | Was abgedeckt wird |
+|---|---|---|---|---|
+| 1 | `XXX ... ...` | X | `true` | oberste Reihe (0-1-2) |
+| 2 | `... OOO ...` | O | `true` | mittlere Reihe (3-4-5) |
+| 3 | `... ... XXX` | X | `true` | unterste Reihe (6-7-8) |
+| 4 | `O.. O.. O..` | O | `true` | linke Spalte (0-3-6) |
+| 5 | `.X. .X. .X.` | X | `true` | mittlere Spalte (1-4-7) |
+| 6 | `..O ..O ..O` | O | `true` | rechte Spalte (2-5-8) |
+| 7 | `XOO OX. XOX` | X | `true` | Diagonale (0-4-8) |
+| 8 | `..O .O. O..` | O | `true` | Gegendiagonale (2-4-6) |
+| 9 | `... ... ...` | X | `false` | leeres Brett |
+| 10 | `XOX XXO OXO` | X | `false` | Unentschieden, X hat keine Linie |
+| 11 | `XOX XXO OXO` | O | `false` | dasselbe Brett aus Sicht von O |
+| 12 | `OOO XX. .X.` | X | `false` | eine Reihe gewinnt nur für die eigene Farbe |
+
+Die Fälle 1–8 decken alle acht möglichen Siegeslinien ab. Dass manche dieser Bretter in einer echten Partie nie vorkommen können (`XXX ... ...` enthält kein einziges `O`), ist Absicht: `isWin` ist eine reine Funktion über ein beliebiges Brett, deshalb steht pro Siegeslinie das kleinstmögliche Muster.
+
+## 5. Einzeltests (Given-When-Then)
+
+Was sich nicht sinnvoll parametrisieren lässt, bleibt als eigener Test bestehen – beide benutzen die Spieler-Fixture:
 
 | # | Test | Given | When | Then |
 |---|---|---|---|---|
-| 1 | `isWinningDiagonalForX` | ein Brett mit der Diagonalen 0-4-8 aus X belegt (`XOO OX. XOX`) | auf einen Sieg von X (`Stone.CROSS`) geprüft wird | wird `true` zurückgegeben |
-| 2 | `isWinningTopRowForO` | ein Brett mit der obersten Reihe (0-1-2) aus O belegt (`OOO XX. .X.`) | auf einen Sieg von O (`Stone.CIRCLE`) geprüft wird | wird `true` zurückgegeben |
-| 3 | `emptyBoardIsNoWin` | ein komplett leeres Brett (`... ... ...`) | auf einen Sieg von X geprüft wird | wird `false` zurückgegeben |
-| 4 | `aRowOnlyWinsForItsOwnColor` | ein Brett, auf dem nur O die oberste Reihe komplett hat (`OOO XX. .X.`) | auf einen Sieg von X geprüft wird | wird `false` zurückgegeben (eine Reihe gewinnt nur für die eigene Farbe) |
-| 5 | `givenADiagonal_whenCheckingX_thenItWins` | ein Brett mit der Diagonalen aus X belegt (`XOO OX. XOX`) | auf einen Sieg von X geprüft wird | wird `true` zurückgegeben (identisch zu Test 1, hier explizit im Given-When-Then-Stil geschrieben) |
-| 6 | `twoGreedyPlayersLetTheStartingPlayerWin` | zwei `GreedyPlayer`-Instanzen, die beide immer das oberste freie Feld wählen | eine komplette Partie gespielt wird (`TicTacToeMain.play`) | gewinnt der startende Spieler X über die Diagonale 0-4-8 |
-| 7 | `theSamePlayerInstanceTwiceIsRejected` | dieselbe `GreedyPlayer`-Instanz als X- und O-Spieler übergeben | eine Partie gestartet wird | wird eine `IllegalArgumentException` geworfen |
+| 1 | `given_twoGreedyPlayers_when_aGameIsPlayed_then_theStartingPlayerWins` | zwei `GreedyPlayer`, die beide immer das oberste freie Feld wählen | eine komplette Partie gespielt wird (`TicTacToeMain.play`) | gewinnt der startende Spieler X über die Diagonale 0-4-8 |
+| 2 | `given_theSamePlayerTwice_when_aGameIsStarted_then_throwsIllegalArgumentException` | dieselbe `GreedyPlayer`-Instanz als X- und O-Spieler übergeben | eine Partie gestartet wird | wird eine `IllegalArgumentException` geworfen |
 
-## 4. Test-Code auf GitHub
+**Gesamt: 16 Tests** – 2 Dummy-Tests, 12 Läufe des Parameterized Tests und 2 Einzeltests. Die Assertions in `TicTacToeMainTest` laufen alle über AssertJ (`WithAssertions`); im `DummyTest` steht bewusst je einmal JUnit und AssertJ nebeneinander.
+
+## 6. Test-Code auf GitHub
 
 Repository: `SunriseDuarte/450-tictactest-mvk`
 
 - [`TicTacToeMainTest.java`](https://github.com/SunriseDuarte/450-tictactest-mvk/blob/main/src/test/java/ch/bbw/m450/tictactoe/TicTacToeMainTest.java)
 - [`DummyTest.java`](https://github.com/SunriseDuarte/450-tictactest-mvk/blob/main/src/test/java/ch/bbw/m450/tictactoe/DummyTest.java)
 
-## 5. Screenshot – alle Tests erfolgreich
+## 7. Screenshot – alle Tests erfolgreich
 
-Ausgeführt mit `./gradlew test`, Report über den Browser geöffnet und als Screenshot gesichert.
+Ausgeführt mit `./gradlew test`, Report über den Browser geöffnet und als Screenshot gesichert. Die Screenshots in diesem und im nächsten Abschnitt stammen vom Stand *vor* der Umstellung auf Fixtures und Parameterized Tests, als die Suite noch 9 Tests umfasste.
 
 ![Alle Tests erfolgreich (9/9, 100%)](screenshots/all-tests-passing.png)
 
-## 6. Screenshot – ein fehlschlagender Test
+## 8. Screenshot – ein fehlschlagender Test
 
 Für den Nachweis wurde `emptyBoardIsNoWin()` kurzzeitig manipuliert (`isFalse()` → `isTrue()`), sodass die Assertion fehlschlägt. Danach wurde die Änderung wieder rückgängig gemacht, damit die Test-Suite wieder grün ist.
 

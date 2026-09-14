@@ -1,11 +1,16 @@
 package ch.bbw.m450.tictactoe;
 
-import static ch.bbw.m450.tictactoe.TicTacToeMain.isWin;
+import java.util.stream.Stream;
+
+import org.assertj.core.api.WithAssertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import ch.bbw.m450.tictactoe.TicTacToePlayer.Stone;
 import ch.bbw.m450.tictactoe.players.GreedyPlayer;
-import org.assertj.core.api.WithAssertions;
-import org.junit.jupiter.api.Test;
 
 /**
  * Test-suite for the tic-tac-toe engine. Uses AssertJ via the {@link WithAssertions}
@@ -13,59 +18,88 @@ import org.junit.jupiter.api.Test;
  */
 class TicTacToeMainTest implements WithAssertions {
 
-	@Test
-	void isWinningDiagonalForX() {
-		assertThat(isWin(toBoard("XOO OX. XOX"), Stone.CROSS)).isTrue();
-	}
+	// board fixtures, one per winning line: X = cross, O = circle, . = empty field,
+	// the spaces only separate the three rows
+	private static final String TOP_ROW_X_WINS = "XXX ... ...";
+	private static final String MID_ROW_O_WINS = "... OOO ...";
+	private static final String BOTTOM_ROW_X_WINS = "... ... XXX";
+	private static final String LEFT_COL_O_WINS = "O.. O.. O..";
+	private static final String MID_COL_X_WINS = ".X. .X. .X.";
+	private static final String RIGHT_COL_O_WINS = "..O ..O ..O";
+	private static final String DIAGONAL_X_WINS = "XOO OX. XOX";
+	private static final String ANTI_DIAGONAL_O_WINS = "..O .O. O..";
 
-	@Test
-	void isWinningTopRowForO() {
-		assertThat(isWin(toBoard("OOO XX. .X."), Stone.CIRCLE)).isTrue();
-	}
+	// board fixtures without a win for the color that gets checked
+	private static final String EMPTY_BOARD = "... ... ...";
+	private static final String DRAW_BOARD = "XOX XXO OXO";
+	private static final String TOP_ROW_O_WINS = "OOO XX. .X.";
 
-	@Test
-	void emptyBoardIsNoWin() {
-		assertThat(isWin(toBoard("... ... ..."), Stone.CROSS)).isFalse();
-	}
+	private GreedyPlayer xPlayer;
 
-	@Test
-	void aRowOnlyWinsForItsOwnColor() {
-		assertThat(isWin(toBoard("OOO XX. .X."), Stone.CROSS)).isFalse();
-	}
+	private GreedyPlayer oPlayer;
 
 	/**
-	 * The same as {@link #isWinningDiagonalForX()}, written out in the given-when-then style.
-	 * Readable, but the one-liner above usually says the same thing with less ceremony.
+	 * Fixture: every test starts with two fresh players, so no test can be influenced by a
+	 * game another test has played before.
 	 */
-	@Test
-	void givenADiagonal_whenCheckingX_thenItWins() {
-		// given
-		var boardWithDiagonal = toBoard("XOO OX. XOX");
-		// when
-		var winning = isWin(boardWithDiagonal, Stone.CROSS);
-		// then
-		assertThat(winning).isTrue();
+	@BeforeEach
+	void setUp() {
+		xPlayer = new GreedyPlayer();
+		oPlayer = new GreedyPlayer();
+	}
+
+	@ParameterizedTest(name = "{1} on \"{0}\" -> {2}")
+	@MethodSource("boardConstellations")
+	void given_aBoard_when_isWinIsChecked_then_returnsWhetherThatColorHasALine(String pattern, Stone color,
+			boolean expectedToWin) {
+		var board = toBoard(pattern);
+
+		var winning = TicTacToeMain.isWin(board, color);
+
+		assertThat(winning).isEqualTo(expectedToWin);
 	}
 
 	@Test
-	void twoGreedyPlayersLetTheStartingPlayerWin() {
+	void given_twoGreedyPlayers_when_aGameIsPlayed_then_theStartingPlayerWins() {
 		// both always fill the top-most-left free field, which lets X complete the 0-4-8 diagonal
-		assertThat(TicTacToeMain.play(new GreedyPlayer(), new GreedyPlayer())).isEqualTo(Stone.CROSS);
+		assertThat(TicTacToeMain.play(xPlayer, oPlayer)).isEqualTo(Stone.CROSS);
 	}
 
 	@Test
-	void theSamePlayerInstanceTwiceIsRejected() {
-		var greedy = new GreedyPlayer();
-		assertThatThrownBy(() -> TicTacToeMain.play(greedy, greedy))
+	void given_theSamePlayerTwice_when_aGameIsStarted_then_throwsIllegalArgumentException() {
+		assertThatThrownBy(() -> TicTacToeMain.play(xPlayer, xPlayer))
 				.isInstanceOf(IllegalArgumentException.class);
 	}
 
 	/**
-	 * Test-only helper turning a compact pattern like {@code "XOO OX. XOX"} into a board.
-	 * {@code X} = cross, {@code O} = circle, {@code .} = empty; spaces separate rows and are ignored.
-	 * Lives in the test-scope because it is only useful for writing readable tests.
+	 * The board constellations for the parameterized test above, each one as
+	 * pattern / color to check / expected result.
 	 */
-	static Stone[] toBoard(String pattern) {
+	private static Stream<Arguments> boardConstellations() {
+		return Stream.of(
+				// all eight winning lines, checked for the color that completes them
+				Arguments.of(TOP_ROW_X_WINS, Stone.CROSS, true),
+				Arguments.of(MID_ROW_O_WINS, Stone.CIRCLE, true),
+				Arguments.of(BOTTOM_ROW_X_WINS, Stone.CROSS, true),
+				Arguments.of(LEFT_COL_O_WINS, Stone.CIRCLE, true),
+				Arguments.of(MID_COL_X_WINS, Stone.CROSS, true),
+				Arguments.of(RIGHT_COL_O_WINS, Stone.CIRCLE, true),
+				Arguments.of(DIAGONAL_X_WINS, Stone.CROSS, true),
+				Arguments.of(ANTI_DIAGONAL_O_WINS, Stone.CIRCLE, true),
+				// nobody has three in a line
+				Arguments.of(EMPTY_BOARD, Stone.CROSS, false),
+				Arguments.of(DRAW_BOARD, Stone.CROSS, false),
+				Arguments.of(DRAW_BOARD, Stone.CIRCLE, false),
+				// a line only wins for its own color
+				Arguments.of(TOP_ROW_O_WINS, Stone.CROSS, false));
+	}
+
+	/**
+	 * Helper turning a compact pattern like {@code "XOO OX. XOX"} into the board that
+	 * {@link TicTacToeMain#isWin} expects. Lives in the test-scope because it is only useful
+	 * for writing readable tests.
+	 */
+	private static Stone[] toBoard(String pattern) {
 		var fields = pattern.replace(" ", "");
 		if (fields.length() != TicTacToeMain.BOARD_SIZE) {
 			throw new IllegalArgumentException("a board needs exactly 9 fields, but got: " + fields);
