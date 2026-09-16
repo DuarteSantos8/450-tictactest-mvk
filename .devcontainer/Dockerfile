@@ -1,5 +1,8 @@
-# Alpine-basiertes Image mit Java 25 (Base-Image spaeter wechselbar, z.B. Ubuntu)
-FROM eclipse-temurin:25-jdk-alpine
+# Alpine-basiertes Image mit Java 25 von Azul Zulu.
+# Azul, weil das Projekt (gradle/gradle-daemon-jvm.properties) genau diese JDK
+# erwartet - sonst wuerde Gradle sie herunterladen, was auf Alpine fehlschlaegt.
+# (Base-Image spaeter wechselbar, z.B. auf Ubuntu.)
+FROM azul/zulu-openjdk-alpine:25
 
 # Werkzeuge, die man zum Entwickeln braucht
 RUN apk add --no-cache bash git

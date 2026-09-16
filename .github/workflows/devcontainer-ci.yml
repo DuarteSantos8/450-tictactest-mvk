@@ -3,8 +3,6 @@ name: devcontainer-ci
 # Zeigt Auftrag 3: ein CI-Job laeuft im DevContainer-Image aus der GHCR und nutzt
 # automatisch die neueste freigegebene Version (:latest).
 on:
-  push:
-    branches: [main]
   pull_request:
   workflow_dispatch:
 
