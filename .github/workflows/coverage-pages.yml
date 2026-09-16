@@ -9,6 +9,9 @@ on:
 jobs:
   coverage-pages:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash # Steps mit bash statt sh ausfuehren
     container:
       image: ghcr.io/sunriseduarte/450-tictactest-mvk:latest
       credentials:
