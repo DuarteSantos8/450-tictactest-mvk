@@ -67,6 +67,7 @@ jobs:
         uses: peter-evans/create-pull-request@v6
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+          base: main
           branch: chore/devcontainer-${{ env.VERSION }}
           title: "chore: CI auf DevContainer-Image ${{ env.VERSION }} umstellen"
           commit-message: "chore: CI auf DevContainer-Image ${{ env.VERSION }} umstellen"
