@@ -1,0 +1,77 @@
+name: devcontainer-release
+
+# Tag vX.Y.Z  -> Image bauen, in die GHCR pushen (= freigeben) und Auto-PR erstellen.
+# Pull Request -> Image nur testweise bauen (nicht pushen), damit der Dockerfile geprueft wird.
+on:
+  push:
+    tags: ['v*']
+  pull_request:
+    paths:
+      - '.devcontainer/**'
+      - '.github/workflows/devcontainer-release.yml'
+  workflow_dispatch:
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # fuer den Auto-PR
+      packages: write # Image in die GHCR pushen
+      pull-requests: write # Auto-PR erstellen
+    steps:
+      - uses: actions/checkout@v4
+
+      # Bei einem Tag wird gepusht, sonst nur gebaut. Image-Name muss klein sein.
+      - name: Modus und Image bestimmen
+        run: |
+          OWNER=$(echo "${GITHUB_REPOSITORY_OWNER}" | tr '[:upper:]' '[:lower:]')
+          echo "IMAGE=ghcr.io/${OWNER}/tictactest-devcontainer" >> "$GITHUB_ENV"
+          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
+            echo "PUSH=true" >> "$GITHUB_ENV"
+            echo "VERSION=${GITHUB_REF_NAME}" >> "$GITHUB_ENV"
+          else
+            echo "PUSH=false" >> "$GITHUB_ENV"
+            echo "VERSION=test-${GITHUB_SHA::7}" >> "$GITHUB_ENV"
+          fi
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Bei GHCR anmelden
+        if: env.PUSH == 'true'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Image bauen (und bei einem Tag pushen)
+        uses: docker/build-push-action@v6
+        with:
+          context: .devcontainer
+          push: ${{ env.PUSH }}
+          tags: |
+            ${{ env.IMAGE }}:${{ env.VERSION }}
+            ${{ env.IMAGE }}:latest
+
+      # Ab hier nur bei einem echten Release (Tag): CI auf die neue Version umstellen
+      - name: CI auf neue Version umstellen
+        if: env.PUSH == 'true'
+        run: |
+          NEW="${IMAGE}:${VERSION}"
+          for f in .github/workflows/build.yml .github/workflows/coverage-pages.yml .github/workflows/coverage-gate.yml; do
+            sed -i "s#image: ghcr.io/.*#image: ${NEW}#" "$f"
+          done
+
+      - name: Auto-PR erstellen
+        if: env.PUSH == 'true'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: chore/devcontainer-${{ env.VERSION }}
+          title: "chore: CI auf DevContainer-Image ${{ env.VERSION }} umstellen"
+          commit-message: "chore: CI auf DevContainer-Image ${{ env.VERSION }} umstellen"
+          body: |
+            Automatisch erstellt nach dem Release von `${{ env.VERSION }}`.
+
+            Stellt die CI-Workflows auf `${{ env.IMAGE }}:${{ env.VERSION }}` um.
+            Nach dem Merge (= Freigabe) verwenden alle CI-Jobs das neue Image.
