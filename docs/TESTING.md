@@ -1,8 +1,40 @@
-# Test-Dokumentation – TicTacToe
+# Testkonzept – TicTacToe (Modul 450)
 
-## 1. Setup (JUnit 5 + AssertJ)
+Dieses Dokument beschreibt den **aktuellen Stand** der Test-Suite: was getestet wird,
+mit welchen Werkzeugen und nach welcher Strategie. Es dokumentiert nur die bereits
+umgesetzten Tests, keine geplanten Erweiterungen.
 
-Das Projekt ist ein Gradle-Projekt (`build.gradle`) mit folgenden Test-Abhängigkeiten:
+## 1. Ziel und Testgegenstand
+
+Getestet wird die Spiel-Engine in `TicTacToeMain`:
+
+- **`isWin(Stone[] board, Stone color)`** – die Sieg-Erkennung: hat eine Farbe drei in
+  einer Linie? Das ist eine reine Funktion über ein beliebiges Brett und der Kern der
+  Test-Suite.
+- **`play(TicTacToePlayer xPlayer, TicTacToePlayer oPlayer)`** – der Spielablauf: eine
+  komplette Partie sowie die Vorbedingung, dass beide Spieler verschieden sein müssen.
+
+Nicht Teil des aktuellen Stands sind `HumanPlayer` (liest von der Tastatur) und
+`TicTacToeMain.toString(...)` (reine Bildschirmausgabe) – diese werden noch nicht
+automatisiert getestet.
+
+Werkzeuge: **JUnit 5** (Jupiter, verwaltet über `junit-bom:5.11.4`) und **AssertJ 3.27.7**,
+gebaut mit **Gradle**.
+
+## 2. Teststrategie
+
+- **Given-When-Then** als Namens- und Aufbauschema: jeder Testmethodenname sagt Ausgangslage,
+  Aktion und Erwartung; im Rumpf sind die drei Blöcke durch Leerzeilen getrennt.
+- **AssertJ fluent-Assertions** statt roher `assertTrue(...)`: die Testklasse implementiert
+  `WithAssertions`, damit `assertThat(...)` und `assertThatThrownBy(...)` direkt verfügbar sind.
+- **Fixtures für Isolation**: benannte Board-Konstanten statt magischer Strings, und vor jeder
+  Testmethode frische Spieler-Instanzen.
+- **Parameterized Test gegen Coderepetition**: die acht Siegeslinien und die Nicht-Sieg-Fälle
+  laufen über *eine* Methode statt über je einen Test pro Brett.
+
+## 3. Setup (JUnit 5 + AssertJ)
+
+Gradle-Projekt (`build.gradle`) mit folgenden Test-Abhängigkeiten:
 
 ```groovy
 dependencies {
@@ -20,9 +52,10 @@ test {
 Tests ausführen: `./gradlew test`
 Report danach unter: `build/reports/tests/test/index.html`
 
-Der Parameterized Test braucht keine zusätzliche Abhängigkeit: `org.junit.jupiter:junit-jupiter` ist ein Sammel-Artefakt und enthält `junit-jupiter-params` bereits.
+Der Parameterized Test braucht keine zusätzliche Abhängigkeit: `org.junit.jupiter:junit-jupiter`
+ist ein Sammel-Artefakt und enthält `junit-jupiter-params` bereits.
 
-## 2. Dummy-Tests
+## 4. Dummy-Tests
 
 Datei: [`DummyTest.java`](../src/test/java/ch/bbw/m450/tictactoe/DummyTest.java)
 Zweck: rein technischer Nachweis, dass JUnit 5 und AssertJ korrekt eingebunden sind (keine TicTacToe-Logik).
@@ -32,7 +65,7 @@ Zweck: rein technischer Nachweis, dass JUnit 5 und AssertJ korrekt eingebunden s
 | `dummyJUnitTest` | zwei Ganzzahlen 1 und 1 | die Summe gebildet wird | ist das Ergebnis 2 (geprüft mit JUnit `assertTrue`) |
 | `dummyAssertJTest` | zwei Ganzzahlen 1 und 1 | die Summe gebildet wird | ist das Ergebnis 2 (geprüft mit AssertJ `assertThat(...).isEqualTo(...)`) |
 
-## 3. Fixtures und Helper
+## 5. Fixtures und Helper
 
 Datei: [`TicTacToeMainTest.java`](../src/test/java/ch/bbw/m450/tictactoe/TicTacToeMainTest.java)
 
@@ -57,7 +90,7 @@ void setUp() {
 
 **Helper** – `toBoard(...)` übersetzt so ein Muster in das `Stone[]` mit neun Feldern, das `TicTacToeMain.isWin(...)` erwartet. Ohne den Helper müsste in jedem Test ein Array von Hand aufgezählt werden, was das Brett unlesbar macht. Passt die Länge nicht oder steht ein unbekanntes Zeichen im Muster, wirft der Helper eine `IllegalArgumentException`.
 
-## 4. Parameterized Test
+## 6. Parameterized Test
 
 Die Sieg-Erkennung wird nicht mehr mit einem Test pro Brett geprüft, sondern mit *einer* Testmethode über viele Board-Konstellationen:
 
@@ -95,7 +128,7 @@ Geprüfte Konstellationen:
 
 Die Fälle 1–8 decken alle acht möglichen Siegeslinien ab. Dass manche dieser Bretter in einer echten Partie nie vorkommen können (`XXX ... ...` enthält kein einziges `O`), ist Absicht: `isWin` ist eine reine Funktion über ein beliebiges Brett, deshalb steht pro Siegeslinie das kleinstmögliche Muster.
 
-## 5. Einzeltests (Given-When-Then)
+## 7. Einzeltests (Given-When-Then)
 
 Was sich nicht sinnvoll parametrisieren lässt, bleibt als eigener Test bestehen – beide benutzen die Spieler-Fixture:
 
@@ -104,22 +137,26 @@ Was sich nicht sinnvoll parametrisieren lässt, bleibt als eigener Test bestehen
 | 1 | `given_twoGreedyPlayers_when_aGameIsPlayed_then_theStartingPlayerWins` | zwei `GreedyPlayer`, die beide immer das oberste freie Feld wählen | eine komplette Partie gespielt wird (`TicTacToeMain.play`) | gewinnt der startende Spieler X über die Diagonale 0-4-8 |
 | 2 | `given_theSamePlayerTwice_when_aGameIsStarted_then_throwsIllegalArgumentException` | dieselbe `GreedyPlayer`-Instanz als X- und O-Spieler übergeben | eine Partie gestartet wird | wird eine `IllegalArgumentException` geworfen |
 
+## 8. Testumfang und Ausführung
+
 **Gesamt: 16 Tests** – 2 Dummy-Tests, 12 Läufe des Parameterized Tests und 2 Einzeltests. Die Assertions in `TicTacToeMainTest` laufen alle über AssertJ (`WithAssertions`); im `DummyTest` steht bewusst je einmal JUnit und AssertJ nebeneinander.
 
-## 6. Test-Code auf GitHub
+Lokal ausgeführt mit `./gradlew test` – zuletzt **16 Tests, 0 Fehler** (`DummyTest` 2, `TicTacToeMainTest` 14). Zusätzlich läuft bei jedem Push/Pull-Request die GitHub-Actions-Pipeline (`.github/workflows/build.yml`) mit den Schritten `build` und `test` in einem eigenen Container-Image; der Build ist grün.
 
-Repository: `SunriseDuarte/450-tictactest-mvk`
+## 9. Test-Code auf GitHub
 
-- [`TicTacToeMainTest.java`](https://github.com/SunriseDuarte/450-tictactest-mvk/blob/main/src/test/java/ch/bbw/m450/tictactoe/TicTacToeMainTest.java)
-- [`DummyTest.java`](https://github.com/SunriseDuarte/450-tictactest-mvk/blob/main/src/test/java/ch/bbw/m450/tictactoe/DummyTest.java)
+Repository: `DuarteSantos8/450-tictactest-mvk`
 
-## 7. Screenshot – alle Tests erfolgreich
+- [`TicTacToeMainTest.java`](https://github.com/DuarteSantos8/450-tictactest-mvk/blob/main/src/test/java/ch/bbw/m450/tictactoe/TicTacToeMainTest.java)
+- [`DummyTest.java`](https://github.com/DuarteSantos8/450-tictactest-mvk/blob/main/src/test/java/ch/bbw/m450/tictactoe/DummyTest.java)
+
+## 10. Screenshot – alle Tests erfolgreich
 
 Ausgeführt mit `./gradlew test`, Report über den Browser geöffnet und als Screenshot gesichert. Die Screenshots in diesem und im nächsten Abschnitt stammen vom Stand *vor* der Umstellung auf Fixtures und Parameterized Tests, als die Suite noch 9 Tests umfasste.
 
 ![Alle Tests erfolgreich (9/9, 100%)](screenshots/all-tests-passing.png)
 
-## 8. Screenshot – ein fehlschlagender Test
+## 11. Screenshot – ein fehlschlagender Test
 
 Für den Nachweis wurde `emptyBoardIsNoWin()` kurzzeitig manipuliert (`isFalse()` → `isTrue()`), sodass die Assertion fehlschlägt. Danach wurde die Änderung wieder rückgängig gemacht, damit die Test-Suite wieder grün ist.
 
