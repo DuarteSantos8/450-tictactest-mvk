@@ -1,6 +1,7 @@
 plugins {
 	id 'java'
 	id 'application'
+	id 'jacoco'
 }
 
 repositories {
@@ -25,4 +26,13 @@ run {
 
 test {
 	useJUnitPlatform()
+	finalizedBy jacocoTestReport // Report immer nach den Tests erzeugen
+}
+
+jacocoTestReport {
+	dependsOn test
+	reports {
+		xml.required = true  // XML: wird von den Workflows ausgelesen
+		html.required = true // HTML: menschlich lesbarer Report
+	}
 }

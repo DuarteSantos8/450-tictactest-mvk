@@ -32,4 +32,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - run: ./gradlew test
+      # Tests laufen und JaCoCo erstellt den Coverage-Report
+      - run: ./gradlew test jacocoTestReport
+
+      # Den kompletten HTML-Report als Artifact speichern (fuer jeden Branch)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: build/reports/jacoco/test/html
