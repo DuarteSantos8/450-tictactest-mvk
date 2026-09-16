@@ -1,6 +1,6 @@
 {
 	"name": "tictactest-mvk",
-	"image": "ghcr.io/duartesantos8/tictactest-devcontainer:v1.0.1",
+	"image": "ghcr.io/duartesantos8/tictactest-devcontainer:v1.0.2",
 	"customizations": {
 		"vscode": {
 			"extensions": [
