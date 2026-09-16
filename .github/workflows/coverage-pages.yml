@@ -1,0 +1,59 @@
+name: coverage-pages
+
+# Nur auf main: neue Coverage messen, zur Historie hinzufuegen und veroeffentlichen.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  coverage-pages:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/sunriseduarte/450-tictactest-mvk:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    permissions:
+      contents: write # zum Pushen auf den gh-pages-Branch
+      packages: read
+    steps:
+      - uses: actions/checkout@v4
+
+      # Coverage messen
+      - run: ./gradlew test jacocoTestReport
+
+      # Aktuellen Coverage-Wert aus dem XML lesen
+      - name: Coverage-Wert bestimmen
+        run: echo "COVERAGE=$(bash scripts/coverage.sh)" >> "$GITHUB_ENV"
+
+      # Bestehende Historie vom gh-pages-Branch holen (beim ersten Mal noch leer)
+      - name: Bisherige Historie holen
+        uses: actions/checkout@v4
+        continue-on-error: true
+        with:
+          ref: gh-pages
+          path: gh-pages
+
+      # Seite bauen: index.html + CSV mit neuer Zeile
+      - name: Seite zusammenstellen
+        run: |
+          mkdir -p site
+          cp pages/index.html site/index.html
+          if [ -f gh-pages/coverage-history.csv ]; then
+            cp gh-pages/coverage-history.csv site/coverage-history.csv
+          else
+            echo "Datum,Commit,Coverage" > site/coverage-history.csv
+          fi
+          echo "$(date +%F),${GITHUB_SHA:0:7},${COVERAGE}" >> site/coverage-history.csv
+
+      # site/ als gh-pages-Branch veroeffentlichen
+      - name: Auf gh-pages veroeffentlichen
+        run: |
+          cd site
+          git init -q
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add .
+          git commit -q -m "coverage: ${COVERAGE}% (${GITHUB_SHA:0:7})"
+          git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" HEAD:gh-pages
