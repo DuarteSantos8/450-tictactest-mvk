@@ -1,0 +1,25 @@
+name: devcontainer-ci
+
+# Zeigt Auftrag 3: ein CI-Job laeuft im DevContainer-Image aus der GHCR und nutzt
+# automatisch die neueste freigegebene Version (:latest).
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test-in-devcontainer:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/duartesantos8/tictactest-devcontainer:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+      options: --user root # im CI als root, damit der Workspace beschreibbar ist
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - uses: actions/checkout@v4
+      - run: ./gradlew test

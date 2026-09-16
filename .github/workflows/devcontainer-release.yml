@@ -53,14 +53,10 @@ jobs:
             ${{ env.IMAGE }}:${{ env.VERSION }}
             ${{ env.IMAGE }}:latest
 
-      # Ab hier nur bei einem echten Release (Tag): CI auf die neue Version umstellen
-      - name: CI auf neue Version umstellen
+      # Ab hier nur bei einem echten Release (Tag): DevContainer auf die neue Version pinnen
+      - name: DevContainer auf neue Version pinnen
         if: env.PUSH == 'true'
-        run: |
-          NEW="${IMAGE}:${VERSION}"
-          for f in .github/workflows/build.yml .github/workflows/coverage-pages.yml .github/workflows/coverage-gate.yml; do
-            sed -i "s#image: ghcr.io/.*#image: ${NEW}#" "$f"
-          done
+        run: sed -i "s#tictactest-devcontainer:v[0-9.]*#tictactest-devcontainer:${VERSION}#" .devcontainer/devcontainer.json
 
       - name: Auto-PR erstellen
         if: env.PUSH == 'true'
@@ -69,10 +65,10 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           base: main
           branch: chore/devcontainer-${{ env.VERSION }}
-          title: "chore: CI auf DevContainer-Image ${{ env.VERSION }} umstellen"
-          commit-message: "chore: CI auf DevContainer-Image ${{ env.VERSION }} umstellen"
+          title: "chore: DevContainer auf ${{ env.VERSION }} aktualisieren"
+          commit-message: "chore: DevContainer auf ${{ env.VERSION }} aktualisieren"
           body: |
             Automatisch erstellt nach dem Release von `${{ env.VERSION }}`.
 
-            Stellt die CI-Workflows auf `${{ env.IMAGE }}:${{ env.VERSION }}` um.
-            Nach dem Merge (= Freigabe) verwenden alle CI-Jobs das neue Image.
+            Pinnt `.devcontainer/devcontainer.json` auf `${{ env.IMAGE }}:${{ env.VERSION }}`.
+            Nach dem Merge (= Freigabe) verwenden alle die neue Version.

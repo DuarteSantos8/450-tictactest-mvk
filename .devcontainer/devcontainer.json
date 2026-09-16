@@ -1,8 +1,6 @@
 {
 	"name": "tictactest-mvk",
-	"build": {
-		"dockerfile": "Dockerfile"
-	},
+	"image": "ghcr.io/duartesantos8/tictactest-devcontainer:v1.0.0",
 	"customizations": {
 		"vscode": {
 			"extensions": [
