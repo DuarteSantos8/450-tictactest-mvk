@@ -1,10 +1,14 @@
 name: devcontainer-release
 
-# Tag vX.Y.Z  -> Image bauen, in die GHCR pushen (= freigeben) und Auto-PR erstellen.
+# Push auf main (Dockerfile geaendert) -> Image bauen, in die GHCR pushen und Auto-PR erstellen.
 # Pull Request -> Image nur testweise bauen (nicht pushen), damit der Dockerfile geprueft wird.
 on:
   push:
-    tags: ['v*']
+    branches: [main]
+    # Nur der Dockerfile! Sonst wuerde der Merge vom Auto-PR (aendert devcontainer.json)
+    # wieder ein neues Image bauen -> Endlosschleife.
+    paths:
+      - '.devcontainer/Dockerfile'
   pull_request:
     paths:
       - '.devcontainer/**'
@@ -21,14 +25,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Bei einem Tag wird gepusht, sonst nur gebaut. Image-Name muss klein sein.
+      # Auf main wird gepusht, sonst nur gebaut. Image-Name muss klein sein.
+      # Version: v1.0.<Nummer vom Workflow-Lauf>, zaehlt also automatisch hoch.
       - name: Modus und Image bestimmen
         run: |
           OWNER=$(echo "${GITHUB_REPOSITORY_OWNER}" | tr '[:upper:]' '[:lower:]')
           echo "IMAGE=ghcr.io/${OWNER}/tictactest-devcontainer" >> "$GITHUB_ENV"
-          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
+          if [ "${GITHUB_REF}" = "refs/heads/main" ]; then
             echo "PUSH=true" >> "$GITHUB_ENV"
-            echo "VERSION=${GITHUB_REF_NAME}" >> "$GITHUB_ENV"
+            echo "VERSION=v1.0.${GITHUB_RUN_NUMBER}" >> "$GITHUB_ENV"
           else
             echo "PUSH=false" >> "$GITHUB_ENV"
             echo "VERSION=test-${GITHUB_SHA::7}" >> "$GITHUB_ENV"
@@ -44,7 +49,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Image bauen (und bei einem Tag pushen)
+      - name: Image bauen (und auf main pushen)
         uses: docker/build-push-action@v6
         with:
           context: .devcontainer
@@ -53,22 +58,27 @@ jobs:
             ${{ env.IMAGE }}:${{ env.VERSION }}
             ${{ env.IMAGE }}:latest
 
-      # Ab hier nur bei einem echten Release (Tag): DevContainer auf die neue Version pinnen
-      - name: DevContainer auf neue Version pinnen
+      # Ab hier nur nach einem erfolgreichen Push: neue Version ueberall eintragen
+      - name: devcontainer.json und CI-Workflows auf neue Version setzen
         if: env.PUSH == 'true'
-        run: sed -i "s#tictactest-devcontainer:v[0-9.]*#tictactest-devcontainer:${VERSION}#" .devcontainer/devcontainer.json
+        run: |
+          sed -i "s#${IMAGE}:[a-z0-9.]*#${IMAGE}:${VERSION}#g" \
+            .devcontainer/devcontainer.json .github/workflows/*.yml
+          git diff
 
+      # Workflow-Dateien darf das normale GITHUB_TOKEN nicht aendern,
+      # darum braucht es hier ein eigenes Token (Secret PAT_TOKEN, Scope "repo" + "workflow").
       - name: Auto-PR erstellen
         if: env.PUSH == 'true'
         uses: peter-evans/create-pull-request@v6
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.PAT_TOKEN }}
           base: main
           branch: chore/devcontainer-${{ env.VERSION }}
           title: "chore: DevContainer auf ${{ env.VERSION }} aktualisieren"
           commit-message: "chore: DevContainer auf ${{ env.VERSION }} aktualisieren"
           body: |
-            Automatisch erstellt nach dem Release von `${{ env.VERSION }}`.
+            Automatisch erstellt nach dem Push von `${{ env.IMAGE }}:${{ env.VERSION }}`.
 
-            Pinnt `.devcontainer/devcontainer.json` auf `${{ env.IMAGE }}:${{ env.VERSION }}`.
+            Aktualisiert `.devcontainer/devcontainer.json` und alle CI-Workflows auf die neue Version.
             Nach dem Merge (= Freigabe) verwenden alle die neue Version.

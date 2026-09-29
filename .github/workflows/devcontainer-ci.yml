@@ -1,7 +1,7 @@
 name: devcontainer-ci
 
 # Zeigt Auftrag 3: ein CI-Job laeuft im DevContainer-Image aus der GHCR und nutzt
-# automatisch die neueste freigegebene Version (:latest).
+# die Version, die der Auto-PR eintraegt (= neueste freigegebene Version).
 on:
   pull_request:
   workflow_dispatch:
@@ -10,7 +10,7 @@ jobs:
   test-in-devcontainer:
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/duartesantos8/tictactest-devcontainer:latest
+      image: ghcr.io/duartesantos8/tictactest-devcontainer:v1.0.2
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}

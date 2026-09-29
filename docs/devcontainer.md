@@ -16,36 +16,33 @@ stellen).
 
 ## Auftrag 2 – Image aus der GHCR in der CI
 
-Die bestehenden CI-Workflows laufen in einem eigenen Container-Image aus der GitHub
-Container Registry (siehe `.github/workflows/build.yml`, `container.image`).
+Alle CI-Workflows (`build.yml`, `coverage-pages.yml`, `coverage-gate.yml`,
+`devcontainer-ci.yml`) laufen im selben eigenen Image aus der GitHub Container Registry:
+`ghcr.io/duartesantos8/tictactest-devcontainer:vX.Y.Z` (siehe `container.image`). Da das
+Image vom eigenen Account stammt, genügt das automatische `GITHUB_TOKEN` zum Pullen.
 
 ## Auftrag 3 – Continuous Deployment des DevContainers
 
-Ablauf und Versionierungs-/Freigabe-Konzept:
+Ablauf (`.github/workflows/devcontainer-release.yml`):
 
-1. **Versionierung mit Git-Tags** (`v1.0.0`, `v1.0.1`, …). Ein Tag = eine Freigabe.
-2. **Build & Push** übernimmt `.github/workflows/devcontainer-release.yml`:
-   - **Pull Request** auf `.devcontainer/**`: Image wird nur **testweise gebaut**
-     (kein Push) → der Dockerfile wird geprüft.
-   - **Tag `v*`**: Image wird gebaut und als
-     `…/tictactest-devcontainer:vX.Y.Z` **und** `:latest` in die GHCR **gepusht**.
-3. **Freigabe (nur freigegebene Container verwenden):**
-   Nur ein Tag löst einen Push aus. Ein normaler Push auf `main` erzeugt **kein**
-   neues Image. So kann keine ungetaggte Version in die Pipeline gelangen.
-4. **Auto-PR:** Nach einem Release erstellt der Workflow automatisch einen Pull
-   Request, der `.devcontainer/devcontainer.json` auf die neue Version `vX.Y.Z`
-   pinnt. Erst der **Merge** (= Freigabe durch Review) übernimmt die neue Version.
-   (Workflow-Dateien darf das automatische `GITHUB_TOKEN` nicht ändern, deshalb
-   pinnt der Auto-PR nur die `devcontainer.json`.)
-5. **Neueste Version in der CI:** `.github/workflows/devcontainer-ci.yml` läuft im
-   Image `…/tictactest-devcontainer:latest`, nutzt also automatisch die neueste
-   freigegebene Version.
+1. **Pull Request**, der `.devcontainer/**` ändert: Image wird nur **testweise gebaut**
+   (kein Push) → der Dockerfile wird geprüft.
+2. **Push auf `main`**, der `.devcontainer/Dockerfile` ändert: Image wird gebaut und als
+   `…/tictactest-devcontainer:v1.0.<Lauf-Nummer>` (und `:latest`) in die GHCR **gepusht**.
+   Die Version zählt so automatisch hoch.
+3. **Auto-PR:** Nach dem erfolgreichen Push erstellt der Workflow automatisch einen Pull
+   Request, der die neue Version in `.devcontainer/devcontainer.json` **und in allen
+   CI-Workflows** einträgt.
+4. **Freigabe:** Alle (lokal und CI) verwenden immer die Version, die in den Dateien steht –
+   nie `:latest`. Ein neues Image wird also erst verwendet, wenn der Auto-PR **gemergt**
+   ist (= Freigabe durch Review). Nach dem Merge nutzen CI und „Reopen in Container"
+   automatisch die neue Version.
 
-### Neues Release erstellen
+Hinweis: Nur Änderungen am `Dockerfile` lösen ein neues Image aus. Sonst würde der Merge
+vom Auto-PR (ändert `devcontainer.json`) wieder ein Image bauen → Endlosschleife.
 
-```
-git tag v1.0.1
-git push origin v1.0.1
-```
+### Token für den Auto-PR
 
-Danach: Auto-PR abwarten und mergen.
+Workflow-Dateien darf das automatische `GITHUB_TOKEN` nicht ändern. Darum braucht es ein
+Personal Access Token (classic) mit den Scopes `repo` und `workflow`, gespeichert als
+Repository-Secret **`PAT_TOKEN`** (Settings → Secrets and variables → Actions).

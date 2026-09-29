@@ -6,10 +6,11 @@ jobs:
   build:
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/sunriseduarte/450-tictactest-mvk:latest
+      image: ghcr.io/duartesantos8/tictactest-devcontainer:v1.0.2
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
+      options: --user root # im CI als root, damit der Workspace beschreibbar ist
     permissions:
       contents: read
       packages: read
@@ -22,10 +23,11 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/sunriseduarte/450-tictactest-mvk:latest
+      image: ghcr.io/duartesantos8/tictactest-devcontainer:v1.0.2
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
+      options: --user root # im CI als root, damit der Workspace beschreibbar ist
     permissions:
       contents: read
       packages: read
