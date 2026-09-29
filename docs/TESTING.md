@@ -1,98 +1,91 @@
-# Testkonzept – TicTacToe (Modul 450)
+# Testkonzept – TicTacTest (Modul 450)
 
-Dieses Dokument beschreibt den **aktuellen Stand** der Test-Suite: was getestet wird,
-mit welchen Werkzeugen und nach welcher Strategie. Es dokumentiert nur die bereits
-umgesetzten Tests, keine geplanten Erweiterungen.
+**Projekt:** TicTacTest (TicTacToe-Spiel-Engine in Java)
+**Dokument-Version:** 0.3 (IST)
+**Autor / Rolle:** Duarte Santos – Entwickler = Tester (bewertete Einzelarbeit)
+**Repository:** `DuarteSantos8/450-tictactest-mvk`
 
-## 1. Ziel und Testgegenstand
+Dieses Dokument beschreibt den **aktuellen IST-Zustand** der Test-Suite: was getestet wird,
+mit welchen Werkzeugen, nach welcher Strategie und mit welchen Erfolgskriterien. Es
+dokumentiert nur die bereits umgesetzten Tests, keine geplanten Erweiterungen.
 
-Getestet wird die Spiel-Engine in `TicTacToeMain`:
+## 1. Einleitung
 
-- **`isWin(Stone[] board, Stone color)`** – die Sieg-Erkennung: hat eine Farbe drei in
-  einer Linie? Das ist eine reine Funktion über ein beliebiges Brett und der Kern der
-  Test-Suite.
+Getestet wird das ganze Spiel: die Spiel-Engine `TicTacToeMain` und alle Player.
+
+- **`isWin(Stone[] board, Stone color)`** – Sieg-Erkennung: hat eine Farbe drei in einer
+  Linie? Eine reine Funktion über ein beliebiges Brett und Herzstück der Test-Suite.
 - **`play(TicTacToePlayer xPlayer, TicTacToePlayer oPlayer)`** – der Spielablauf: eine
-  komplette Partie sowie die Vorbedingung, dass beide Spieler verschieden sein müssen.
+  komplette Partie, Sieg, Unentschieden, ungültige Züge und die Vorbedingung, dass beide
+  Spieler verschieden sein müssen.
+- **`toString(...)`** und **`main(...)`** – Bildschirmausgabe und Programmstart.
+- **`HumanPlayer`** (liest von der Tastatur), **`GreedyPlayer`** und der neue, perfekt
+  spielende **`PerfectPlayer`** (Minimax-Algorithmus).
 
-Nicht Teil des aktuellen Stands sind `HumanPlayer` (liest von der Tastatur) und
-`TicTacToeMain.toString(...)` (reine Bildschirmausgabe) – diese werden noch nicht
-automatisiert getestet.
+## 2. Testziele
 
-Werkzeuge: **JUnit 5** (Jupiter, verwaltet über `junit-bom:5.11.4`) und **AssertJ 3.27.7**,
-gebaut mit **Gradle**.
+Die Ziele sind nummeriert, damit die Testfälle (Abschnitt 7) darauf verweisen können.
 
-## 2. Teststrategie
+- **TZ-01:** `isWin` erkennt alle acht möglichen Siegeslinien für die richtige Farbe.
+- **TZ-02:** `isWin` meldet für Bretter ohne Linie (oder für die falsche Farbe) korrekt „kein Sieg".
+- **TZ-03:** `play` spielt eine vollständige Partie zweier `GreedyPlayer`; der Startspieler X gewinnt.
+- **TZ-04:** `play` weist zwei identische Spieler-Instanzen mit einer `IllegalArgumentException` ab.
+- **TZ-05:** `play` erkennt ein Unentschieden und bricht bei ungültigen Zügen mit einer
+  `IllegalStateException` ab.
+- **TZ-06:** Ein-/Ausgabe funktioniert: `HumanPlayer` liest die Eingabe, `toString` und `main`
+  geben das Brett richtig aus (StdIn/StdOut-Tests mit Pioneer).
+- **TZ-07:** Der `PerfectPlayer` verliert nie und blockt, wenn der Gegner gewinnen könnte.
+- **TZ-08:** Mindestens 90 % Branch-Coverage (wird im Build erzwungen).
 
-- **Given-When-Then** als Namens- und Aufbauschema: jeder Testmethodenname sagt Ausgangslage,
+## 3. Teststrategie und Teststufen
+
+**Teststufe:** automatisierte **Unit-Tests** (JUnit + AssertJ). Dazu kommen:
+
+- **StdIn/StdOut-Tests mit Pioneer:** `@StdIo` ersetzt die Tastatur-Eingabe und fängt die
+  Konsolen-Ausgabe ab (`HumanPlayerTest`, `main` und `play` in `TicTacToeMainTest`).
+- **Property-based Tests mit jqwik** (zusätzliches Testframework): jqwik erzeugt viele
+  zufällige Eingaben und prüft, dass eine Regel immer stimmt (`PerfectPlayerProperties`).
+- **Mutation Testing mit PITest:** PITest baut absichtlich Fehler in den Code ein (z.B. `<`
+  statt `<=`) und schaut, ob ein Test rot wird. Wird kein Test rot, ist der Test zu schwach.
+- **Coverage-Verification mit JaCoCo:** der Build schlägt fehl, wenn die Branch-Coverage
+  unter 90 % fällt.
+
+Angewendete Prinzipien:
+
+- **Given-When-Then** als Namens- und Aufbauschema: der Methodenname nennt Ausgangslage,
   Aktion und Erwartung; im Rumpf sind die drei Blöcke durch Leerzeilen getrennt.
 - **AssertJ fluent-Assertions** statt roher `assertTrue(...)`: die Testklasse implementiert
   `WithAssertions`, damit `assertThat(...)` und `assertThatThrownBy(...)` direkt verfügbar sind.
-- **Fixtures für Isolation**: benannte Board-Konstanten statt magischer Strings, und vor jeder
-  Testmethode frische Spieler-Instanzen.
-- **Parameterized Test gegen Coderepetition**: die acht Siegeslinien und die Nicht-Sieg-Fälle
+- **Fixtures für Isolation:** benannte Board-Konstanten statt magischer Strings und vor jeder
+  Testmethode frische Spieler-Instanzen (`@BeforeEach`).
+- **Parameterized Test gegen Coderepetition:** die acht Siegeslinien und die Nicht-Sieg-Fälle
   laufen über *eine* Methode statt über je einen Test pro Brett.
 
-## 3. Setup (JUnit 5 + AssertJ)
+### Fixtures und Helper
 
-Gradle-Projekt (`build.gradle`) mit folgenden Test-Abhängigkeiten:
-
-```groovy
-dependencies {
-    testImplementation platform('org.junit:junit-bom:5.11.4')
-    testImplementation 'org.junit.jupiter:junit-jupiter'
-    testImplementation 'org.assertj:assertj-core:3.27.7'
-    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-}
-
-test {
-    useJUnitPlatform()
-}
-```
-
-Tests ausführen: `./gradlew test`
-Report danach unter: `build/reports/tests/test/index.html`
-
-Der Parameterized Test braucht keine zusätzliche Abhängigkeit: `org.junit.jupiter:junit-jupiter`
-ist ein Sammel-Artefakt und enthält `junit-jupiter-params` bereits.
-
-## 4. Dummy-Tests
-
-Datei: [`DummyTest.java`](../src/test/java/ch/bbw/m450/tictactoe/DummyTest.java)
-Zweck: rein technischer Nachweis, dass JUnit 5 und AssertJ korrekt eingebunden sind (keine TicTacToe-Logik).
-
-| Test | Given | When | Then |
-|---|---|---|---|
-| `dummyJUnitTest` | zwei Ganzzahlen 1 und 1 | die Summe gebildet wird | ist das Ergebnis 2 (geprüft mit JUnit `assertTrue`) |
-| `dummyAssertJTest` | zwei Ganzzahlen 1 und 1 | die Summe gebildet wird | ist das Ergebnis 2 (geprüft mit AssertJ `assertThat(...).isEqualTo(...)`) |
-
-## 5. Fixtures und Helper
-
-Datei: [`TicTacToeMainTest.java`](../src/test/java/ch/bbw/m450/tictactoe/TicTacToeMainTest.java)
-
-Der Testcode benutzt zwei Arten von Fixtures – also festen Ausgangszuständen, die jeder Test gleich vorfindet – und einen Helper. Alle drei stehen in der Testklasse selbst, weil sie ausserhalb der Tests niemandem nützen.
-
-**Board-Fixtures** – benannte Konstanten statt magischer Strings mitten im Test. Ein Brett wird als Muster geschrieben, `X` = Kreuz, `O` = Kreis, `.` = leeres Feld; die Leerzeichen trennen nur die drei Zeilen:
+**Board-Fixtures** – benannte Konstanten. Ein Brett wird als Muster geschrieben, `X` = Kreuz,
+`O` = Kreis, `.` = leeres Feld; die Leerzeichen trennen nur die drei Zeilen:
 
 ```java
 private static final String DIAGONAL_X_WINS = "XOO OX. XOX";
 private static final String DRAW_BOARD = "XOX XXO OXO";
 ```
 
-**Spieler-Fixture** – `@BeforeEach setUp()` legt vor *jeder* Testmethode zwei frische `GreedyPlayer` an, damit kein Test von einer Partie eines anderen Tests beeinflusst wird:
+**Spieler-Fixture** – `@BeforeEach setUp()` legt vor *jeder* Testmethode zwei frische
+`GreedyPlayer` an, damit kein Test von einer Partie eines anderen Tests beeinflusst wird.
 
-```java
-@BeforeEach
-void setUp() {
-    xPlayer = new GreedyPlayer();
-    oPlayer = new GreedyPlayer();
-}
-```
+**Helper** – `Boards.toBoard(...)` übersetzt so ein Muster in das `Stone[]` mit neun Feldern,
+das das Spiel erwartet. Er liegt in einer eigenen Klasse, damit alle Testklassen ihn benutzen
+können (keine Coderepetition). Bei falscher Länge oder unbekanntem Zeichen wirft er eine
+`IllegalArgumentException`.
 
-**Helper** – `toBoard(...)` übersetzt so ein Muster in das `Stone[]` mit neun Feldern, das `TicTacToeMain.isWin(...)` erwartet. Ohne den Helper müsste in jedem Test ein Array von Hand aufgezählt werden, was das Brett unlesbar macht. Passt die Länge nicht oder steht ein unbekanntes Zeichen im Muster, wirft der Helper eine `IllegalArgumentException`.
+**Test-Player als Lambda** – `TicTacToePlayer` hat nur eine Methode, darum kann man einen
+Test-Player einfach als Lambda schreiben, z.B. einen „schummelnden“ Player, der immer auf
+Feld `-1` spielt. So braucht es kein Mocking-Framework.
 
-## 6. Parameterized Test
+### Parameterized Test
 
-Die Sieg-Erkennung wird nicht mehr mit einem Test pro Brett geprüft, sondern mit *einer* Testmethode über viele Board-Konstellationen:
+Die Sieg-Erkennung (TZ-01 / TZ-02) wird mit *einer* Methode über viele Konstellationen geprüft:
 
 ```java
 @ParameterizedTest(name = "{1} on \"{0}\" -> {2}")
@@ -107,67 +100,126 @@ void given_aBoard_when_isWinIsChecked_then_returnsWhetherThatColorHasALine(Strin
 }
 ```
 
-`@MethodSource("boardConstellations")` verweist auf eine statische Methode, die einen `Stream<Arguments>` liefert. Jedes `Arguments.of(muster, farbe, erwartet)` wird zu einem eigenen Testlauf, dessen drei Werte der Reihe nach in den drei Parametern landen. Aus 12 Einträgen werden also 12 Testläufe, die im Report einzeln erscheinen – dank `name = "{1} on \"{0}\" -> {2}"` mit lesbarem Titel wie `CROSS on "XXX ... ..." -> true`. Schlägt einer fehl, steht sofort da, welches Brett schuld ist.
+## 4. Testobjekte und Testabdeckung
 
-Geprüfte Konstellationen:
+| Testobjekt | Abgedeckt? | Testklasse | Bemerkung |
+|---|---|---|---|
+| `TicTacToeMain.isWin(...)` | ja | `TicTacToeMainTest` | alle acht Siegeslinien + Nicht-Sieg-Fälle |
+| `TicTacToeMain.play(...)` | ja | `TicTacToeMainTest` | Sieg, Unentschieden, ungültige Züge, gleiche Spieler |
+| `TicTacToeMain.toString(...)` | ja | `TicTacToeMainTest` | Ausgabe ohne Farbcodes verglichen |
+| `TicTacToeMain.main(...)` | ja | `TicTacToeMainTest` | mit Pioneer: Eingabe `3, 4, 5` → Mensch gewinnt |
+| `HumanPlayer` | ja | `HumanPlayerTest` | mit Pioneer: Eingabe lesen, Ausgabe prüfen, falsche Eingabe |
+| `GreedyPlayer` | ja | `GreedyPlayerTest` | volles Brett → Exception; sonst über `play(...)` |
+| `PerfectPlayer` | ja | `PerfectPlayerTest`, `PerfectPlayerProperties` | gewinnt gegen Greedy, blockt, verliert nie (jqwik) |
+| `Stone.opponent()` | ja | `TicTacToeMainTest` | beide Farben |
 
-| # | Muster | geprüfte Farbe | Erwartung | Was abgedeckt wird |
+**Gemessene Abdeckung (JaCoCo):**
+
+| Metrik | Wert | Ziel |
+|---|---|---|
+| Branch-Coverage | **100 %** (94 von 94) | min. 90 % (im Build erzwungen) |
+| Line-Coverage | **98.5 %** (67 von 68) | – |
+| Mutation Score (PITest) | **99 %** (72 von 73 Mutanten gekillt) | – |
+
+Die eine nicht abgedeckte Zeile ist der unsichtbare Standard-Konstruktor von `TicTacToeMain`
+(die Klasse hat nur statische Methoden, darum wird nie ein Objekt davon erstellt).
+
+Der eine überlebende Mutant ändert im `PerfectPlayer` `score > bestScore` zu `score >= bestScore`.
+Dann nimmt der Player bei gleich guten Zügen den letzten statt den ersten – er spielt aber
+genauso perfekt. Das ist ein **äquivalenter Mutant**, den kein Test erkennen kann.
+
+## 5. Testrahmen und Erfolgskriterien
+
+- **Wer testet:** der Entwickler selbst (Einzelarbeit).
+- **Wann wird getestet:** lokal bei jeder Änderung und automatisch bei jedem Push und Pull-Request
+  über GitHub Actions.
+- **Pass-Kriterium:** alle Tests laufen grün durch (`0 failures, 0 errors`) und die
+  Branch-Coverage ist mindestens 90 %.
+- **Fail-Kriterium / Abbruchbedingung:** ein einziger roter Test oder zu wenig Coverage lässt
+  die CI-Pipeline fehlschlagen; ein Pull-Request wird erst nach grünem Build gemergt.
+
+## 6. Testumgebung und Testinfrastruktur
+
+- **Sprache / Runtime:** Java 25 (Azul Zulu, bereitgestellt über den DevContainer).
+- **Build-Tool:** Gradle 9.7 (über den `./gradlew`-Wrapper).
+- **Testframeworks (aktuellste Versionen):** JUnit 6.1.3 (`junit-bom`), AssertJ 3.27.7,
+  JUnit Pioneer 2.3.0, jqwik 1.10.1, JaCoCo 0.8.15, PITest 1.30.0.
+- **Lokale Ausführung:**
+  - `./gradlew test` → Test-Report unter `build/reports/tests/test/index.html`,
+    Coverage-Report unter `build/reports/jacoco/test/html/index.html`
+  - `./gradlew check` → zusätzlich die Coverage-Verification (min. 90 % Branch)
+  - `./gradlew pitest` → Mutation-Report unter `build/reports/pitest/index.html`
+- **CI:** `.github/workflows/build.yml` (Schritte `build` und `test`, im DevContainer-Image).
+  Der Test-Job führt `./gradlew check pitest` aus und speichert Test-, Coverage- und
+  PITest-Report bei jedem Commit als Artifacts.
+- Der Parameterized Test braucht keine Zusatz-Abhängigkeit: `org.junit.jupiter:junit-jupiter`
+  ist ein Sammel-Artefakt und enthält `junit-jupiter-params` bereits.
+
+## 7. Testfallbeschreibungen
+
+| ID | Zielbezug | Voraussetzung | Schritt | Erwartetes Ergebnis |
 |---|---|---|---|---|
-| 1 | `XXX ... ...` | X | `true` | oberste Reihe (0-1-2) |
-| 2 | `... OOO ...` | O | `true` | mittlere Reihe (3-4-5) |
-| 3 | `... ... XXX` | X | `true` | unterste Reihe (6-7-8) |
-| 4 | `O.. O.. O..` | O | `true` | linke Spalte (0-3-6) |
-| 5 | `.X. .X. .X.` | X | `true` | mittlere Spalte (1-4-7) |
-| 6 | `..O ..O ..O` | O | `true` | rechte Spalte (2-5-8) |
-| 7 | `XOO OX. XOX` | X | `true` | Diagonale (0-4-8) |
-| 8 | `..O .O. O..` | O | `true` | Gegendiagonale (2-4-6) |
-| 9 | `... ... ...` | X | `false` | leeres Brett |
-| 10 | `XOX XXO OXO` | X | `false` | Unentschieden, X hat keine Linie |
-| 11 | `XOX XXO OXO` | O | `false` | dasselbe Brett aus Sicht von O |
-| 12 | `OOO XX. .X.` | X | `false` | eine Reihe gewinnt nur für die eigene Farbe |
+| TC-01 | TZ-01 | Brett `XXX ... ...` | `isWin(board, CROSS)` | `true` (oberste Reihe) |
+| TC-02 | TZ-01 | Brett `..O ..O ..O` | `isWin(board, CIRCLE)` | `true` (rechte Spalte) |
+| TC-03 | TZ-01 | Brett `XOO OX. XOX` | `isWin(board, CROSS)` | `true` (Diagonale 0-4-8) |
+| TC-04 | TZ-02 | leeres Brett `... ... ...` | `isWin(board, CROSS)` | `false` |
+| TC-05 | TZ-02 | Brett `OOO XX. .X.` | `isWin(board, CROSS)` | `false` (Linie gehört O, nicht X) |
+| TC-06 | TZ-03 | zwei frische `GreedyPlayer` | `play(xPlayer, oPlayer)` | Rückgabe `CROSS` (X gewinnt) |
+| TC-07 | TZ-04 | dieselbe Spieler-Instanz als X und O | `play(xPlayer, xPlayer)` | `IllegalArgumentException` |
+| TC-08 | TZ-05 | zwei `PerfectPlayer` | `play(...)` | Rückgabe `null`, Ausgabe „it's a draw!“ |
+| TC-09 | TZ-05 | O spielt auf `-1`, `9` oder das besetzte Feld `0` | `play(greedy, cheater)` | `IllegalStateException` |
+| TC-10 | TZ-06 | Eingabe `" 4 "` | `HumanPlayer.play(...)` | Rückgabe `4`, Frage „where to to put…“ wird ausgegeben |
+| TC-11 | TZ-06 | Eingabe `abc` | `HumanPlayer.play(...)` | `NumberFormatException` |
+| TC-12 | TZ-06 | Brett `X.. .O. ...` | `toString(board)` | `X  1  2` / `3  O  5` / `6  7  8` |
+| TC-13 | TZ-06 | Eingabe `3, 4, 5` | `main(...)` | Ausgabe „...and the winner is: CROSS“ |
+| TC-14 | TZ-07 | `GreedyPlayer` gegen `PerfectPlayer` (beide Reihenfolgen) | `play(...)` | `PerfectPlayer` gewinnt |
+| TC-15 | TZ-07 | Brett `XX. .O. ...`, O ist dran | `PerfectPlayer.play(...)` | `2` (blockt) |
+| TC-16 | TZ-07 | zufälliger Gegner (50 Spiele, jqwik) | `play(random, perfect)` | der Zufalls-Player gewinnt nie |
+| TC-17 | TZ-08 | – | `./gradlew check` | Build grün, Branch-Coverage ≥ 90 % |
 
-Die Fälle 1–8 decken alle acht möglichen Siegeslinien ab. Dass manche dieser Bretter in einer echten Partie nie vorkommen können (`XXX ... ...` enthält kein einziges `O`), ist Absicht: `isWin` ist eine reine Funktion über ein beliebiges Brett, deshalb steht pro Siegeslinie das kleinstmögliche Muster.
+TC-01 bis TC-05 sind Beispiele aus den 12 Konstellationen des Parameterized Tests
+(`boardConstellations`); die vollständige Liste steht in `TicTacToeMainTest.java`.
 
-## 7. Einzeltests (Given-When-Then)
+## 8. Testplan und Zuständigkeiten
 
-Was sich nicht sinnvoll parametrisieren lässt, bleibt als eigener Test bestehen – beide benutzen die Spieler-Fixture:
+- **Zuständig:** Duarte Santos (Erstellung, Ausführung und Wartung der Tests).
+- **Ausführung:** automatisiert bei jedem Push / Pull-Request über GitHub Actions; zusätzlich
+  lokal vor jedem Commit.
+- **Ergebnisdokumentation:** Test-Report und JaCoCo-Coverage werden in der CI als Artifact
+  gespeichert; die Coverage-Entwicklung ist als Time-Series auf GitHub Pages sichtbar.
 
-| # | Test | Given | When | Then |
-|---|---|---|---|---|
-| 1 | `given_twoGreedyPlayers_when_aGameIsPlayed_then_theStartingPlayerWins` | zwei `GreedyPlayer`, die beide immer das oberste freie Feld wählen | eine komplette Partie gespielt wird (`TicTacToeMain.play`) | gewinnt der startende Spieler X über die Diagonale 0-4-8 |
-| 2 | `given_theSamePlayerTwice_when_aGameIsStarted_then_throwsIllegalArgumentException` | dieselbe `GreedyPlayer`-Instanz als X- und O-Spieler übergeben | eine Partie gestartet wird | wird eine `IllegalArgumentException` geworfen |
+## 9. Dummy-Tests
 
-## 8. Testumfang und Ausführung
+Datei: [`DummyTest.java`](../src/test/java/ch/bbw/m450/tictactoe/DummyTest.java) – rein
+technischer Nachweis, dass JUnit 5 und AssertJ korrekt eingebunden sind (keine TicTacToe-Logik,
+je einmal JUnit `assertEquals` und AssertJ `assertThat` nebeneinander).
 
-**Gesamt: 16 Tests** – 2 Dummy-Tests, 12 Läufe des Parameterized Tests und 2 Einzeltests. Die Assertions in `TicTacToeMainTest` laufen alle über AssertJ (`WithAssertions`); im `DummyTest` steht bewusst je einmal JUnit und AssertJ nebeneinander.
+## 10. Testumfang
 
-Lokal ausgeführt mit `./gradlew test` – zuletzt **16 Tests, 0 Fehler** (`DummyTest` 2, `TicTacToeMainTest` 14). Zusätzlich läuft bei jedem Push/Pull-Request die GitHub-Actions-Pipeline (`.github/workflows/build.yml`) mit den Schritten `build` und `test` in einem eigenen Container-Image; der Build ist grün.
+**Gesamt: 36 Tests**, zuletzt lokal mit `./gradlew check pitest` ausgeführt: **36 Tests, 0 Fehler**.
 
-## 9. Test-Code auf GitHub
+| Testklasse | Anzahl | Inhalt |
+|---|---|---|
+| `DummyTest` | 2 | Nachweis JUnit + AssertJ |
+| `TicTacToeMainTest` | 22 | 12 × Parameterized `isWin`, 3 × ungültiger Zug, 7 Einzeltests |
+| `HumanPlayerTest` | 3 | StdIn/StdOut mit Pioneer |
+| `GreedyPlayerTest` | 1 | volles Brett |
+| `PerfectPlayerTest` | 6 | 2 Spiele gegen Greedy, 3 × blocken, volles Brett |
+| `PerfectPlayerProperties` | 2 | jqwik-Properties (je 50 zufällige Durchläufe) |
 
-Repository: `DuarteSantos8/450-tictactest-mvk`
+Bei jedem Push/Pull-Request läuft zusätzlich die GitHub-Actions-Pipeline; der Build ist grün.
 
-- [`TicTacToeMainTest.java`](https://github.com/DuarteSantos8/450-tictactest-mvk/blob/main/src/test/java/ch/bbw/m450/tictactoe/TicTacToeMainTest.java)
-- [`DummyTest.java`](https://github.com/DuarteSantos8/450-tictactest-mvk/blob/main/src/test/java/ch/bbw/m450/tictactoe/DummyTest.java)
+## 11. Screenshots
 
-## 10. Screenshot – alle Tests erfolgreich
+Alle Tests erfolgreich (36/36):
 
-Ausgeführt mit `./gradlew test`, Report über den Browser geöffnet und als Screenshot gesichert. Die Screenshots in diesem und im nächsten Abschnitt stammen vom Stand *vor* der Umstellung auf Fixtures und Parameterized Tests, als die Suite noch 9 Tests umfasste.
+![Alle Tests erfolgreich (36/36, 100%)](screenshots/all-tests-passing.png)
 
-![Alle Tests erfolgreich (9/9, 100%)](screenshots/all-tests-passing.png)
-
-## 11. Screenshot – ein fehlschlagender Test
-
-Für den Nachweis wurde `emptyBoardIsNoWin()` kurzzeitig manipuliert (`isFalse()` → `isTrue()`), sodass die Assertion fehlschlägt. Danach wurde die Änderung wieder rückgängig gemacht, damit die Test-Suite wieder grün ist.
-
-Übersicht (1 von 9 Tests fehlgeschlagen, 88%):
+Ein bewusst fehlgeschlagener Test (zum Nachweis; danach wieder zurückgesetzt) – Übersicht,
+Klassendetail und Stacktrace:
 
 ![Ein Test schlägt fehl (Übersicht)](screenshots/one-test-failing-overview.png)
 
-Detailansicht der Klasse mit dem fehlgeschlagenen Test:
-
 ![Ein Test schlägt fehl (Klassendetail)](screenshots/one-test-failing-detail.png)
-
-Stacktrace des fehlgeschlagenen Tests:
 
 ![Stacktrace des fehlschlagenden Tests](screenshots/one-test-failing-stacktrace.png)
