@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TicTacTest – Coverage Time-Series</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+  <style>
+    body { font-family: sans-serif; max-width: 800px; margin: 2rem auto; padding: 0 1rem; }
+    h1 { font-size: 1.4rem; }
+    a { color: #2a7; }
+  </style>
+</head>
+<body>
+  <h1>Test Coverage über die Zeit (main)</h1>
+  <canvas id="chart"></canvas>
+  <p><a href="coverage-history.csv">coverage-history.csv</a></p>
+
+  <script>
+    // Die Historie liegt als CSV daneben und wird beim Laden geholt.
+    fetch('coverage-history.csv')
+      .then(r => r.text())
+      .then(text => {
+        const rows = text.trim().split('\n').slice(1); // Kopfzeile weg
+        const labels = [];
+        const values = [];
+        for (const row of rows) {
+          const [datum, commit, coverage] = row.split(',');
+          labels.push(datum + ' (' + commit + ')');
+          values.push(parseFloat(coverage));
+        }
+        new Chart(document.getElementById('chart'), {
+          type: 'line',
+          data: {
+            labels: labels,
+            datasets: [{
+              label: 'Coverage %',
+              data: values,
+              borderColor: '#2a7',
+              fill: false,
+              tension: 0.1
+            }]
+          },
+          options: {
+            scales: { y: { min: 0, max: 100, title: { display: true, text: 'Coverage %' } } }
+          }
+        });
+      });
+  </script>
+</body>
+</html>
