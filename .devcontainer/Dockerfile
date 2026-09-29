@@ -14,4 +14,4 @@ RUN addgroup -g 1000 dev \
 USER dev
 WORKDIR /workspace
 
-# Gradle und JUnit kommen ueber den ./gradlew-Wrapper bzw. build.gradle
+# Gradle, JUnit und die anderen Test-Libraries kommen ueber den ./gradlew-Wrapper bzw. build.gradle
