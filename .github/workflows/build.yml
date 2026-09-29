@@ -34,11 +34,24 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Tests laufen und JaCoCo erstellt den Coverage-Report
-      - run: ./gradlew test jacocoTestReport
+      # Tests + JaCoCo-Report + Coverage-Verification (min. 90 % Branch) + Mutation Testing
+      - run: ./gradlew check pitest
 
-      # Den kompletten HTML-Report als Artifact speichern (fuer jeden Branch)
+      # Alle Reports als Artifacts speichern (fuer jeden Commit, auch wenn ein Test fehlschlaegt)
       - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-report
+          path: build/reports/tests/test
+
+      - uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: coverage-report
           path: build/reports/jacoco/test/html
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pitest-report
+          path: build/reports/pitest

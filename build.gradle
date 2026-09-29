@@ -2,6 +2,7 @@ plugins {
 	id 'java'
 	id 'application'
 	id 'jacoco'
+	id 'info.solidsoft.pitest' version '1.19.0'
 }
 
 repositories {
@@ -9,9 +10,11 @@ repositories {
 }
 
 dependencies {
-	testImplementation platform('org.junit:junit-bom:5.11.4')
+	testImplementation platform('org.junit:junit-bom:6.1.3')
 	testImplementation 'org.junit.jupiter:junit-jupiter'
 	testImplementation 'org.assertj:assertj-core:3.27.7'
+	testImplementation 'org.junit-pioneer:junit-pioneer:2.3.0' // StdIn/StdOut-Tests
+	testImplementation 'net.jqwik:jqwik:1.10.1' // zusaetzliches Testframework (Property-based Testing)
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
@@ -29,10 +32,38 @@ test {
 	finalizedBy jacocoTestReport // Report immer nach den Tests erzeugen
 }
 
+jacoco {
+	toolVersion = '0.8.15'
+}
+
 jacocoTestReport {
 	dependsOn test
 	reports {
 		xml.required = true  // XML: wird von den Workflows ausgelesen
 		html.required = true // HTML: menschlich lesbarer Report
 	}
+}
+
+// Build schlaegt fehl, wenn die Branch-Coverage unter 90 % liegt
+jacocoTestCoverageVerification {
+	dependsOn test
+	violationRules {
+		rule {
+			limit {
+				counter = 'BRANCH'
+				minimum = 0.90
+			}
+		}
+	}
+}
+
+check.dependsOn jacocoTestCoverageVerification
+
+// Mutation Testing: ./gradlew pitest -> Report unter build/reports/pitest
+pitest {
+	pitestVersion = '1.30.0'
+	junit5PluginVersion = '1.2.3'
+	targetClasses = ['ch.bbw.m450.tictactoe.*']
+	outputFormats = ['HTML', 'XML']
+	timestampedReports = false
 }

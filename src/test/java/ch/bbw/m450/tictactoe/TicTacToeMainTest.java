@@ -1,5 +1,7 @@
 package ch.bbw.m450.tictactoe;
 
+import static ch.bbw.m450.tictactoe.Boards.toBoard;
+
 import java.util.stream.Stream;
 
 import org.assertj.core.api.WithAssertions;
@@ -8,9 +10,13 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.junitpioneer.jupiter.StdIo;
+import org.junitpioneer.jupiter.StdOut;
 
 import ch.bbw.m450.tictactoe.TicTacToePlayer.Stone;
 import ch.bbw.m450.tictactoe.players.GreedyPlayer;
+import ch.bbw.m450.tictactoe.players.PerfectPlayer;
 
 /**
  * Test-suite for the tic-tac-toe engine. Uses AssertJ via the {@link WithAssertions}
@@ -71,6 +77,63 @@ class TicTacToeMainTest implements WithAssertions {
 				.isInstanceOf(IllegalArgumentException.class);
 	}
 
+	@Test
+	@StdIo
+	void given_twoPerfectPlayers_when_aGameIsPlayed_then_itIsADraw(StdOut out) {
+		var winner = TicTacToeMain.play(new PerfectPlayer(), new PerfectPlayer());
+
+		assertThat(winner).isNull();
+		assertThat(out.capturedLines()).contains("it's a draw!");
+	}
+
+	@ParameterizedTest(name = "O plays to {0}")
+	@ValueSource(ints = { -1, 9, 0 }) // outside the board, outside the board, already taken by X
+	@StdIo
+	void given_aPlayerWithAnInvalidMove_when_aGameIsPlayed_then_throwsIllegalStateException(int invalidMove,
+			StdOut out) {
+		TicTacToePlayer cheatingPlayer = (board, color) -> invalidMove;
+
+		assertThatThrownBy(() -> TicTacToeMain.play(xPlayer, cheatingPlayer))
+				.isInstanceOf(IllegalStateException.class)
+				.hasMessage("cannot play to position " + invalidMove);
+		assertThat(out.capturedString()).contains("X"); // the board is printed before the error
+	}
+
+	@Test
+	void given_aBoard_when_toStringIsCalled_then_showsTheStonesAndTheFreeFieldNumbers() {
+		var board = toBoard("X.. .O. ...");
+
+		var text = TicTacToeMain.toString(board);
+
+		// remove the color codes (like \033[1m) so only the visible text is left
+		var visibleText = text.replaceAll("\033\\[[0-9;]*m", "");
+		assertThat(visibleText).isEqualTo("""
+				X  1  2 \s
+				3  O  5 \s
+				6  7  8 \s
+				""");
+	}
+
+	@Test
+	void given_aWrongBoard_when_theHelperIsUsed_then_throwsIllegalArgumentException() {
+		assertThatThrownBy(() -> toBoard("XX")).isInstanceOf(IllegalArgumentException.class);
+		assertThatThrownBy(() -> toBoard("XXX ... ..A")).isInstanceOf(IllegalArgumentException.class);
+	}
+
+	@Test
+	void given_aStone_when_opponentIsCalled_then_returnsTheOtherStone() {
+		assertThat(Stone.CROSS.opponent()).isEqualTo(Stone.CIRCLE);
+		assertThat(Stone.CIRCLE.opponent()).isEqualTo(Stone.CROSS);
+	}
+
+	@Test
+	@StdIo({ "3", "4", "5" }) // the human (X) plays the middle row, the greedy player only gets 0 and 1
+	void given_humanInput_when_mainIsStarted_then_theHumanWins(StdOut out) {
+		TicTacToeMain.main(new String[0]);
+
+		assertThat(out.capturedString()).contains("...and the winner is: CROSS");
+	}
+
 	/**
 	 * The board constellations for the parameterized test above, each one as
 	 * pattern / color to check / expected result.
@@ -92,27 +155,5 @@ class TicTacToeMainTest implements WithAssertions {
 				Arguments.of(DRAW_BOARD, Stone.CIRCLE, false),
 				// a line only wins for its own color
 				Arguments.of(TOP_ROW_O_WINS, Stone.CROSS, false));
-	}
-
-	/**
-	 * Helper turning a compact pattern like {@code "XOO OX. XOX"} into the board that
-	 * {@link TicTacToeMain#isWin} expects. Lives in the test-scope because it is only useful
-	 * for writing readable tests.
-	 */
-	private static Stone[] toBoard(String pattern) {
-		var fields = pattern.replace(" ", "");
-		if (fields.length() != TicTacToeMain.BOARD_SIZE) {
-			throw new IllegalArgumentException("a board needs exactly 9 fields, but got: " + fields);
-		}
-		var board = new Stone[TicTacToeMain.BOARD_SIZE];
-		for (var i = 0; i < board.length; i++) {
-			board[i] = switch (fields.charAt(i)) {
-				case 'X' -> Stone.CROSS;
-				case 'O' -> Stone.CIRCLE;
-				case '.' -> null;
-				default -> throw new IllegalArgumentException("unexpected field: " + fields.charAt(i));
-			};
-		}
-		return board;
 	}
 }

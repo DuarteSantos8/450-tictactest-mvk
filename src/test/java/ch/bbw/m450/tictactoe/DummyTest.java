@@ -1,7 +1,7 @@
 package ch.bbw.m450.tictactoe;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.Test;
 
@@ -14,7 +14,7 @@ class DummyTest {
 	@Test
 	void dummyJUnitTest() {
 		var sum = 1 + 1;
-		assertTrue(sum == 2);
+		assertEquals(2, sum);
 	}
 
 	@Test
