@@ -3,6 +3,12 @@
 Alle wichtigen Änderungen an TicTacTest. Die Versionsnummern folgen `MAJOR.MINOR.PATCH`
 (siehe [RELEASE.md](RELEASE.md)). Der neuste Release steht immer zuoberst.
 
+## 1.0.1 - 2026-10-25
+
+### Fixed
+- Tippfehler in der Frage an den Spieler korrigiert: aus „where to to put the next …“
+  wird „where to put the next …“.
+
 ## 1.0.0 - 2026-10-25
 
 Erste veröffentlichte Version von TicTacTest.
