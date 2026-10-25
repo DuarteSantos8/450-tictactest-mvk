@@ -7,7 +7,7 @@ plugins {
 
 // Versionsnummer der App (MAJOR.MINOR.PATCH), siehe RELEASE.md.
 // Der Release-Tag muss genau "v" + diese Version sein, z.B. v1.0.0
-version = '1.0.2'
+version = '1.0.3'
 
 repositories {
 	mavenCentral()

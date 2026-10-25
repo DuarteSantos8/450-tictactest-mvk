@@ -3,6 +3,14 @@
 Alle wichtigen Änderungen an TicTacTest. Die Versionsnummern folgen `MAJOR.MINOR.PATCH`
 (siehe [RELEASE.md](RELEASE.md)). Der neuste Release steht immer zuoberst.
 
+## 1.0.3 - 2026-10-25
+
+### Fixed
+- Endet die Eingabe mitten im Spiel (z.B. Ctrl+D), bricht das Spiel mit der Meldung
+  „game aborted: no more input“ ab statt mit einem Stacktrace.
+- Nach 5 ungültigen Eingaben für den gleichen Zug bricht das Spiel ab („game aborted: too many
+  invalid inputs“). Vorher lief es bei endloser falscher Eingabe für immer weiter.
+
 ## 1.0.2 - 2026-10-25
 
 ### Fixed
