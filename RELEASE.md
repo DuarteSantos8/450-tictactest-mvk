@@ -47,7 +47,7 @@ nächsten Release mit.
 
 | Bedingung | Wie wird sie sichergestellt? |
 |---|---|
-| Alle geplanten Änderungen sind auf `main` | Änderungen kommen nur per Pull Request auf `main`; der Workflow prüft, dass der Tag-Commit auf `main` liegt |
+| Alle geplanten Änderungen sind auf `main` | Branch Protection: auf `main` kommt nur, was per Pull Request mit grünen Checks (`build`, `test`, `gate`) gemergt wurde; der Workflow prüft, dass der Tag-Commit auf `main` liegt |
 | Das Projekt lässt sich bauen | CI (`build.yml`) ist auf `main` grün; der Workflow baut nochmals |
 | Alle Tests sind erfolgreich | CI ist grün; der Workflow führt `./gradlew check` aus (Tests + min. 90 % Branch-Coverage) |
 | Das Changelog ist aktualisiert | Der Workflow bricht ab, wenn `CHANGELOG.md` keinen Abschnitt `## X.Y.Z - Datum` hat |
@@ -137,9 +137,21 @@ Ein Release gilt erst als erfolgreich, wenn das veröffentlichte JAR getestet wu
 Der Workflow macht zusätzlich einen automatischen Smoke-Test: er startet das JAR und spielt
 ein Spiel (Eingabe `3`, `4`, `5`), das X gewinnen muss.
 
+**Protokoll (manueller Test nach dem Release):**
+
+| Release | Download | Prüfsumme | `java -jar` mit Eingabe `3, 4, 5` (Java 25) | Resultat |
+|---|---|---|---|---|
+| v1.0.0 (25.10.2026) | `gh release download v1.0.0` | `tictactest-1.0.0.jar: OK` | „...and the winner is: CROSS“ | erfolgreich |
+| v1.0.1 (25.10.2026) | `gh release download v1.0.1` | `tictactest-1.0.1.jar: OK` | Frage „where to put the next CROSS?“, „...and the winner is: CROSS“ | erfolgreich |
+
 ## Hinweis zu älteren Tags
 
 Früher wurden die Tags `v1.0.0`–`v1.0.2` für die Versionen vom DevContainer-Image benutzt. Diese
 Tags wurden gelöscht, damit `vX.Y.Z` eindeutig nur noch App-Releases bezeichnet. Das
 DevContainer-Image hat eigene Versionen in der GitHub Container Registry
 (siehe [docs/devcontainer.md](docs/devcontainer.md)).
+
+Der erste Versuch für `v1.0.0` ist im Workflow bei der Prüfung „Tag-Commit liegt auf `main`“
+abgebrochen (Git im Container: „dubious ownership“), **bevor** etwas veröffentlicht wurde. Nach
+dem Fix (PR #6) wurde der Tag gemäss Abschnitt „Was passiert, wenn … fehlschlägt?“ gelöscht und
+auf dem neuen `main`-Commit nochmals gesetzt.

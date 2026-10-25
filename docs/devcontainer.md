@@ -10,9 +10,8 @@ Doku zur Aufgabe „DevContainer für TicTacTest" (Auftrag 1–3).
   installiert die VSCode-Extensions **Java Extension Pack** + **Gradle**.
 - Gradle und JUnit kommen über den `./gradlew`-Wrapper bzw. `build.gradle`.
 
-Lokal öffnen: in VSCode „Reopen in Container". Da das Image privat ist, vorher
-einmal `docker login ghcr.io` (oder das Package in den Package-Settings auf public
-stellen).
+Lokal öffnen: in VSCode „Reopen in Container". Das Image ist öffentlich, ein
+`docker login` ist nicht nötig.
 
 ## Auftrag 2 – Image aus der GHCR in der CI
 
@@ -35,7 +34,8 @@ Ablauf (`.github/workflows/devcontainer-release.yml`):
    CI-Workflows** einträgt.
 4. **Freigabe:** Alle (lokal und CI) verwenden immer die Version, die in den Dateien steht –
    nie `:latest`. Ein neues Image wird also erst verwendet, wenn der Auto-PR **gemergt**
-   ist (= Freigabe durch Review). Nach dem Merge nutzen CI und „Reopen in Container"
+   ist (= Freigabe durch den Merge; dank Branch Protection nur, wenn die CI-Checks mit dem
+   neuen Image grün sind). Nach dem Merge nutzen CI und „Reopen in Container"
    automatisch die neue Version.
 
 Hinweis: Nur Änderungen am `Dockerfile` lösen ein neues Image aus. Sonst würde der Merge

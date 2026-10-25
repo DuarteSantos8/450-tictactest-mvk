@@ -17,7 +17,8 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - run: ./gradlew build -x test
+      # nur kompilieren und JAR bauen, die Tests laufen im Job test
+      - run: ./gradlew assemble
 
   test:
     needs: build
