@@ -17,6 +17,14 @@ public class HumanPlayer implements TicTacToePlayer {
 	@Override
 	public int play(Stone[] board, Stone colorToPlay) {
 		System.out.println(TicTacToeMain.toString(board) + "where to put the next " + colorToPlay + "? (0-8): ");
-		return Integer.parseInt(scanner.nextLine().trim());
+		while (true) {
+			var input = scanner.nextLine().trim();
+			// only a single digit 0-8 on a free field is a valid move, everything else is asked again
+			if (input.matches("[0-8]") && board[Integer.parseInt(input)] == null) {
+				return Integer.parseInt(input);
+			}
+			// the input is not printed again, so no strange characters end up in the terminal
+			System.out.println("invalid input, please enter the number of a free field (0-8): ");
+		}
 	}
 }
