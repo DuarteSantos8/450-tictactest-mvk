@@ -28,6 +28,9 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      # Standard-Action fuer Gradle: richtet Gradle ein und cached die Downloads zwischen den Laeufen
+      - uses: gradle/actions/setup-gradle@v6
+
       # Coverage messen
       - run: ./gradlew test jacocoTestReport
 
