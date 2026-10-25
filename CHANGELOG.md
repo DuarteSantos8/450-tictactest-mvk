@@ -3,6 +3,12 @@
 Alle wichtigen Änderungen an TicTacTest. Die Versionsnummern folgen `MAJOR.MINOR.PATCH`
 (siehe [RELEASE.md](RELEASE.md)). Der neuste Release steht immer zuoberst.
 
+## 1.0.2 - 2026-10-25
+
+### Fixed
+- Ungültige Eingaben (keine Zahl, leer, ausserhalb von 0–8 oder ein besetztes Feld) bringen das
+  Spiel nicht mehr zum Absturz. Das Spiel meldet „invalid input“ und fragt nochmals.
+
 ## 1.0.1 - 2026-10-25
 
 ### Fixed
