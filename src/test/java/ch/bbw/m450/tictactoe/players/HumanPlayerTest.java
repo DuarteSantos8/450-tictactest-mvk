@@ -1,11 +1,12 @@
 package ch.bbw.m450.tictactoe.players;
 
+import static ch.bbw.m450.tictactoe.Boards.emptyBoard;
+
 import org.assertj.core.api.WithAssertions;
 import org.junit.jupiter.api.Test;
 import org.junitpioneer.jupiter.StdIo;
 import org.junitpioneer.jupiter.StdOut;
 
-import ch.bbw.m450.tictactoe.TicTacToeMain;
 import ch.bbw.m450.tictactoe.TicTacToePlayer.Stone;
 
 /**
@@ -16,10 +17,10 @@ class HumanPlayerTest implements WithAssertions {
 
 	@Test
 	@StdIo(" 4 ") // spaces around the number are ignored
-	void given_theInput4_when_theHumanPlays_then_returns4(StdOut out) {
+	void readsTheNumberAndIgnoresSpaces(StdOut out) {
 		var player = new HumanPlayer();
 
-		var move = player.play(new Stone[TicTacToeMain.BOARD_SIZE], Stone.CROSS);
+		var move = player.play(emptyBoard(), Stone.CROSS);
 
 		assertThat(move).isEqualTo(4);
 		assertThat(out.capturedString()).contains("where to put the next CROSS? (0-8): ");
@@ -27,9 +28,9 @@ class HumanPlayerTest implements WithAssertions {
 
 	@Test
 	@StdIo({ "2", "7" })
-	void given_twoInputs_when_theHumanPlaysTwice_then_bothInputsAreRead() {
+	void readsOneLinePerMove() {
 		var player = new HumanPlayer();
-		var board = new Stone[TicTacToeMain.BOARD_SIZE];
+		var board = emptyBoard();
 
 		var firstMove = player.play(board, Stone.CIRCLE);
 		var secondMove = player.play(board, Stone.CIRCLE);
@@ -40,10 +41,10 @@ class HumanPlayerTest implements WithAssertions {
 
 	@Test
 	@StdIo("abc")
-	void given_noNumber_when_theHumanPlays_then_throwsNumberFormatException() {
+	void throwsWhenTheInputIsNoNumber() {
 		var player = new HumanPlayer();
 
-		assertThatThrownBy(() -> player.play(new Stone[TicTacToeMain.BOARD_SIZE], Stone.CROSS))
+		assertThatThrownBy(() -> player.play(emptyBoard(), Stone.CROSS))
 				.isInstanceOf(NumberFormatException.class);
 	}
 }

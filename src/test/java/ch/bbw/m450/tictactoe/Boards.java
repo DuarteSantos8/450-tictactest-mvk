@@ -13,6 +13,10 @@ public final class Boards {
 		// only static helper methods
 	}
 
+	public static Stone[] emptyBoard() {
+		return new Stone[TicTacToeMain.BOARD_SIZE];
+	}
+
 	public static Stone[] toBoard(String pattern) {
 		var fields = pattern.replace(" ", "");
 		if (fields.length() != TicTacToeMain.BOARD_SIZE) {
