@@ -144,6 +144,7 @@ ein Spiel (Eingabe `3`, `4`, `5`), das X gewinnen muss.
 | v1.0.0 (25.10.2026) | `gh release download v1.0.0` | `tictactest-1.0.0.jar: OK` | „...and the winner is: CROSS“ | erfolgreich |
 | v1.0.1 (25.10.2026) | `gh release download v1.0.1` | `tictactest-1.0.1.jar: OK` | Frage „where to put the next CROSS?“, „...and the winner is: CROSS“ | erfolgreich |
 | v1.0.2 (25.10.2026) | `gh release download v1.0.2` | `tictactest-1.0.2.jar: OK` | Eingabe `abc, 3, 9, 4, 5`: 2 × „invalid input“, dann „...and the winner is: CROSS“ | erfolgreich |
+| v1.0.3 (25.10.2026) | `gh release download v1.0.3` | `tictactest-1.0.3.jar: OK` | `3, 4, 5` → X gewinnt; leere Eingabe → „game aborted: no more input“; `yes abc \| java -jar …` → „game aborted: too many invalid inputs“ | erfolgreich |
 
 ## Hinweis zu älteren Tags
 
