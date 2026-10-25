@@ -78,5 +78,6 @@ pitest {
 	junit5PluginVersion = '1.2.3'
 	targetClasses = ['ch.bbw.m450.tictactoe.*']
 	outputFormats = ['HTML', 'XML']
+	mutationThreshold = 90 // Build schlaegt fehl, wenn weniger als 90 % der Mutanten erkannt werden
 	timestampedReports = false
 }
