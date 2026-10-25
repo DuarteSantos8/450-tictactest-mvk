@@ -1,7 +1,7 @@
 # Testkonzept – TicTacTest (Modul 450)
 
 **Projekt:** TicTacTest (TicTacToe-Spiel-Engine in Java)
-**Dokument-Version:** 0.3 (IST)
+**Dokument-Version:** 0.4 (IST)
 **Autor / Rolle:** Duarte Santos – Entwickler = Tester (bewertete Einzelarbeit)
 **Repository:** `DuarteSantos8/450-tictactest-mvk`
 
@@ -141,9 +141,9 @@ genauso perfekt. Das ist ein **äquivalenter Mutant**, den kein Test erkennen ka
 ## 6. Testumgebung und Testinfrastruktur
 
 - **Sprache / Runtime:** Java 25 (Azul Zulu, bereitgestellt über den DevContainer).
-- **Build-Tool:** Gradle 9.7 (über den `./gradlew`-Wrapper).
+- **Build-Tool:** Gradle 9.8 (über den `./gradlew`-Wrapper).
 - **Testframeworks (aktuellste Versionen):** JUnit 6.1.3 (`junit-bom`), AssertJ 3.27.7,
-  JUnit Pioneer 2.3.0, jqwik 1.10.1, JaCoCo 0.8.15, PITest 1.30.0.
+  JUnit Pioneer 2.3.0, jqwik 1.10.2, JaCoCo 0.8.15, PITest 1.30.1.
 - **Lokale Ausführung:**
   - `./gradlew test` → Test-Report unter `build/reports/tests/test/index.html`,
     Coverage-Report unter `build/reports/jacoco/test/html/index.html`
