@@ -1,6 +1,7 @@
 package ch.bbw.m450.tictactoe.players;
 
 import static ch.bbw.m450.tictactoe.Boards.emptyBoard;
+import static ch.bbw.m450.tictactoe.Boards.toBoard;
 
 import org.assertj.core.api.WithAssertions;
 import org.junit.jupiter.api.Test;
@@ -40,11 +41,19 @@ class HumanPlayerTest implements WithAssertions {
 	}
 
 	@Test
-	@StdIo("abc")
-	void throwsWhenTheInputIsNoNumber() {
+	@StdIo({ "abc", "", "9", "-1", "4" }) // no number, empty, outside the board, outside the board, valid
+	void asksAgainUntilTheInputIsAFieldOnTheBoard(StdOut out) {
 		var player = new HumanPlayer();
 
-		assertThatThrownBy(() -> player.play(emptyBoard(), Stone.CROSS))
-				.isInstanceOf(NumberFormatException.class);
+		assertThat(player.play(emptyBoard(), Stone.CROSS)).isEqualTo(4);
+		assertThat(out.capturedLines()).filteredOn(line -> line.startsWith("invalid input")).hasSize(4);
+	}
+
+	@Test
+	@StdIo({ "0", "1" })
+	void asksAgainWhenTheFieldIsAlreadyTaken() {
+		var player = new HumanPlayer();
+
+		assertThat(player.play(toBoard("X.. ... ..."), Stone.CIRCLE)).isEqualTo(1);
 	}
 }

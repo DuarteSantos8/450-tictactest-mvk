@@ -41,8 +41,23 @@ run {
 }
 
 test {
-	useJUnitPlatform()
+	useJUnitPlatform {
+		excludeTags 'e2e' // die E2E-Tests laufen im eigenen Task e2eTest
+	}
 	finalizedBy jacocoTestReport // Report immer nach den Tests erzeugen
+}
+
+// End-to-End-Tests: ganzes Spiel ueber main() mit Tastatureingabe/Ausgabe (Tag "e2e").
+// ./gradlew e2eTest -> Report unter build/reports/tests/e2eTest
+tasks.register('e2eTest', Test) {
+	description = 'Runs the end-to-end tests (complete game via stdin/stdout).'
+	group = 'verification'
+	testClassesDirs = sourceSets.test.output.classesDirs
+	classpath = sourceSets.test.runtimeClasspath
+	useJUnitPlatform {
+		includeTags 'e2e'
+	}
+	shouldRunAfter test
 }
 
 jacoco {
@@ -70,13 +85,14 @@ jacocoTestCoverageVerification {
 	}
 }
 
-check.dependsOn jacocoTestCoverageVerification
+check.dependsOn jacocoTestCoverageVerification, e2eTest
 
 // Mutation Testing: ./gradlew pitest -> Report unter build/reports/pitest
 pitest {
 	pitestVersion = '1.30.1'
 	junit5PluginVersion = '1.2.3'
 	targetClasses = ['ch.bbw.m450.tictactoe.*']
+	excludedGroups = ['e2e'] // Mutation Testing nur mit den Unit-Tests
 	outputFormats = ['HTML', 'XML']
 	mutationThreshold = 90 // Build schlaegt fehl, wenn weniger als 90 % der Mutanten erkannt werden
 	timestampedReports = false
