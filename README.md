@@ -24,7 +24,7 @@ Fertige Versionen gibt es unter [Releases](https://github.com/DuarteSantos8/450-
 JAR herunterladen und mit Java 25 starten:
 
 ```bash
-java -jar tictactest-1.0.0.jar
+java -jar tictactest-<version>.jar
 ```
 
 Selbst bauen: `./gradlew jar` → `build/libs/tictactest-<version>.jar`.
