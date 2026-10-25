@@ -122,6 +122,14 @@ class TicTacToeMainTest implements WithAssertions {
 		assertThat(out.capturedString()).contains("...and the winner is: CROSS");
 	}
 
+	@Test
+	@StdIo // no input at all
+	void mainStopsWithAMessageInsteadOfAStackTrace(StdOut out) {
+		TicTacToeMain.main(new String[0]);
+
+		assertThat(out.capturedString()).endsWith("game aborted: no more input\n");
+	}
+
 	/**
 	 * Removes the color codes (like \033[1m) so only the visible text is left.
 	 */

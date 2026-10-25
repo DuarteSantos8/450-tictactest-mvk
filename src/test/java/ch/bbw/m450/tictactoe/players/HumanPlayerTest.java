@@ -50,6 +50,26 @@ class HumanPlayerTest implements WithAssertions {
 	}
 
 	@Test
+	@StdIo({ "a", "b", "c", "d", "e" })
+	void givesUpAfterFiveInvalidInputs() {
+		var player = new HumanPlayer();
+
+		assertThatThrownBy(() -> player.play(emptyBoard(), Stone.CROSS))
+				.isInstanceOf(IllegalStateException.class)
+				.hasMessage("too many invalid inputs");
+	}
+
+	@Test
+	@StdIo({ "abc" }) // after "abc" the input ends (like Ctrl+D)
+	void stopsWhenTheInputEnds() {
+		var player = new HumanPlayer();
+
+		assertThatThrownBy(() -> player.play(emptyBoard(), Stone.CROSS))
+				.isInstanceOf(IllegalStateException.class)
+				.hasMessage("no more input");
+	}
+
+	@Test
 	@StdIo({ "0", "1" })
 	void asksAgainWhenTheFieldIsAlreadyTaken() {
 		var player = new HumanPlayer();
