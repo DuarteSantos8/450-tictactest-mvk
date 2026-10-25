@@ -22,7 +22,7 @@ jobs:
       contents: write # zum Pushen auf den gh-pages-Branch
       packages: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # Coverage messen
       - run: ./gradlew test jacocoTestReport
@@ -33,7 +33,7 @@ jobs:
 
       # Bestehende Historie vom gh-pages-Branch holen (beim ersten Mal noch leer)
       - name: Bisherige Historie holen
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         continue-on-error: true
         with:
           ref: gh-pages
