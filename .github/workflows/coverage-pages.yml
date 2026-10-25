@@ -6,6 +6,10 @@ on:
     branches: [main]
   workflow_dispatch:
 
+# Nie zwei Laeufe gleichzeitig: sonst koennte einer die Historie des anderen ueberschreiben
+concurrency:
+  group: coverage-pages
+
 jobs:
   coverage-pages:
     runs-on: ubuntu-latest
