@@ -14,7 +14,12 @@ public class TicTacToeMain {
 	public static final int BOARD_SIZE = 9;
 
 	public static void main(String[] args) {
-		play(new HumanPlayer(), new GreedyPlayer());
+		try {
+			play(new HumanPlayer(), new GreedyPlayer());
+		} catch (IllegalStateException e) {
+			// e.g. the input has ended: stop with a short message instead of a stack trace
+			System.out.println("game aborted: " + e.getMessage());
+		}
 	}
 
 	/**
