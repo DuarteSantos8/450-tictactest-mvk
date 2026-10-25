@@ -1,7 +1,7 @@
 # Testkonzept – TicTacTest (Modul 450)
 
 **Projekt:** TicTacTest (TicTacToe-Spiel-Engine in Java)
-**Dokument-Version:** 0.4 (IST)
+**Dokument-Version:** 0.5 (IST)
 **Autor / Rolle:** Duarte Santos – Entwickler = Tester (bewertete Einzelarbeit)
 **Repository:** `DuarteSantos8/450-tictactest-mvk`
 
@@ -152,6 +152,9 @@ genauso perfekt. Das ist ein **äquivalenter Mutant**, den kein Test erkennen ka
 - **CI:** `.github/workflows/build.yml` (Schritte `build` und `test`, im DevContainer-Image).
   Der Test-Job führt `./gradlew check pitest` aus und speichert Test-, Coverage- und
   PITest-Report bei jedem Commit als Artifacts.
+- **Release:** `.github/workflows/release.yml` läuft nur bei einem Tag `vX.Y.Z`. Er führt
+  `./gradlew check` aus und startet danach das gebaute JAR als Smoke-Test (Eingabe `3, 4, 5`
+  → X gewinnt). Schlägt etwas fehl, wird kein Release erstellt (siehe `RELEASE.md`).
 - Der Parameterized Test braucht keine Zusatz-Abhängigkeit: `org.junit.jupiter:junit-jupiter`
   ist ein Sammel-Artefakt und enthält `junit-jupiter-params` bereits.
 

@@ -5,6 +5,10 @@ plugins {
 	id 'info.solidsoft.pitest' version '1.19.0'
 }
 
+// Versionsnummer der App (MAJOR.MINOR.PATCH), siehe RELEASE.md.
+// Der Release-Tag muss genau "v" + diese Version sein, z.B. v1.0.0
+version = '1.0.0'
+
 repositories {
 	mavenCentral()
 }
@@ -20,6 +24,15 @@ dependencies {
 
 application {
 	mainClass = 'ch.bbw.m450.tictactoe.TicTacToeMain'
+}
+
+// Ausfuehrbares JAR: Main-Class im Manifest, damit "java -jar tictactest-1.0.0.jar" funktioniert
+jar {
+	manifest {
+		attributes(
+				'Main-Class': application.mainClass.get(),
+				'Implementation-Version': project.version)
+	}
 }
 
 run {

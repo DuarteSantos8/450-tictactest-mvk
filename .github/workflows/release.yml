@@ -1,0 +1,111 @@
+name: release
+
+# Ein Release startet NUR, wenn ein Tag wie v1.0.0 gepusht wird.
+# Ein normaler Push auf main loest keinen Release aus. Ablauf siehe RELEASE.md.
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash # Steps mit bash statt sh ausfuehren
+    # Java 25 + Gradle-Wrapper kommen aus unserem DevContainer-Image (gleiche Umgebung wie lokal)
+    container:
+      image: ghcr.io/duartesantos8/tictactest-devcontainer:v1.0.6
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+      options: --user root # im CI als root, damit der Workspace beschreibbar ist
+    permissions:
+      contents: write # zum Erstellen des GitHub Releases
+      packages: read
+    steps:
+      # 1. Repository auschecken (ganze History, damit wir pruefen koennen, ob der Tag auf main liegt)
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      # 2. Java: ist im DevContainer-Image schon installiert, hier nur zur Kontrolle ausgeben
+      - name: Java-Version anzeigen
+        run: java -version
+
+      # 3. Bedingungen pruefen, bevor irgendetwas veroeffentlicht wird
+      - name: Release-Bedingungen pruefen
+        run: |
+          VERSION=$(./gradlew properties -q | grep '^version:' | cut -d' ' -f2)
+          echo "Tag: ${GITHUB_REF_NAME}  |  Version im build.gradle: ${VERSION}"
+
+          # Tag und Version muessen zusammenpassen (v1.0.0 <-> 1.0.0)
+          if [ "${GITHUB_REF_NAME}" != "v${VERSION}" ]; then
+            echo "::error::Tag ${GITHUB_REF_NAME} passt nicht zur Version ${VERSION} im build.gradle"
+            exit 1
+          fi
+
+          # Der Commit vom Tag muss auf main sein (nur freigegebene Aenderungen)
+          if ! git merge-base --is-ancestor "${GITHUB_SHA}" origin/main; then
+            echo "::error::Der Commit ${GITHUB_SHA} ist nicht auf main"
+            exit 1
+          fi
+
+          # Abschnitt dieser Version aus dem Changelog holen (bis zur naechsten "## "-Zeile)
+          awk -v v="## ${VERSION} - " 'index($0, v) == 1 { found = 1; next } /^## / { found = 0 } found' \
+            CHANGELOG.md > changes.md
+          if ! grep -q '[^[:space:]]' changes.md; then
+            echo "::error::CHANGELOG.md hat keinen Eintrag fuer ${VERSION}"
+            exit 1
+          fi
+
+          echo "VERSION=${VERSION}" >> "$GITHUB_ENV"
+          echo "JAR=tictactest-${VERSION}.jar" >> "$GITHUB_ENV"
+
+      # 4. Tests ausfuehren (inkl. Coverage-Verification). Schlaegt ein Test fehl, stoppt der Release hier.
+      - name: Tests ausfuehren
+        run: ./gradlew check
+
+      # 5. Projekt bauen und ausfuehrbares JAR erzeugen -> build/libs/tictactest-X.Y.Z.jar
+      - name: JAR bauen
+        run: ./gradlew jar
+
+      # 6. Smoke-Test: das fertige JAR wirklich starten und ein Spiel durchspielen
+      #    (Mensch = X spielt 3, 4, 5 und gewinnt gegen den GreedyPlayer)
+      - name: JAR testen
+        run: |
+          printf '3\n4\n5\n' | java -jar "build/libs/${JAR}" | tee smoke.log
+          grep -q "the winner is: CROSS" smoke.log
+
+      # 7. Pruefsumme, damit man kontrollieren kann, dass der Download nicht veraendert wurde
+      - name: SHA-256-Pruefsumme erstellen
+        working-directory: build/libs
+        run: sha256sum "${JAR}" > "${JAR}.sha256"
+
+      # 8. Text fuer den Release zusammenstellen
+      - name: Release-Text erstellen
+        run: |
+          {
+            echo "Release: TicTacTest ${GITHUB_REF_NAME}"
+            echo ""
+            echo "**Tag:** \`${GITHUB_REF_NAME}\`"
+            echo ""
+            echo "**Commit:** ${GITHUB_SHA}"
+            echo ""
+            echo "**Änderungen:**"
+            cat changes.md
+            echo ""
+            echo "**Artefakt:** \`${JAR}\` (starten mit \`java -jar ${JAR}\`, benötigt Java 25)"
+          } > release-notes.md
+          cat release-notes.md >> "$GITHUB_STEP_SUMMARY"
+
+      # 9. GitHub Release erstellen und das JAR anhaengen
+      - name: GitHub Release erstellen
+        uses: softprops/action-gh-release@v3
+        with:
+          name: TicTacTest ${{ github.ref_name }}
+          body_path: release-notes.md
+          fail_on_unmatched_files: true # Fehler, falls das JAR fehlt
+          files: |
+            build/libs/${{ env.JAR }}
+            build/libs/${{ env.JAR }}.sha256
