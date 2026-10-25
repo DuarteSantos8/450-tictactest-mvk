@@ -29,6 +29,11 @@ jobs:
         with:
           fetch-depth: 0
 
+      # Im Container gehoert der Ordner einem anderen Benutzer, darum muss man ihn
+      # Git als "sicher" melden, sonst bricht z.B. git merge-base mit "dubious ownership" ab
+      - name: Git-Ordner als sicher markieren
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
       # 2. Java: ist im DevContainer-Image schon installiert, hier nur zur Kontrolle ausgeben
       - name: Java-Version anzeigen
         run: java -version
