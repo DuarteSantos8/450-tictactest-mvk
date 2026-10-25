@@ -1,6 +1,7 @@
 package ch.bbw.m450.tictactoe;
 
 import static ch.bbw.m450.tictactoe.Boards.toBoard;
+import static org.junit.jupiter.api.Named.named;
 
 import java.util.stream.Stream;
 
@@ -9,6 +10,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.junitpioneer.jupiter.StdIo;
@@ -56,87 +58,80 @@ class TicTacToeMainTest implements WithAssertions {
 
 	@ParameterizedTest(name = "{1} on \"{0}\" -> {2}")
 	@MethodSource("boardConstellations")
-	void given_aBoard_when_isWinIsChecked_then_returnsWhetherThatColorHasALine(String pattern, Stone color,
-			boolean expectedToWin) {
-		var board = toBoard(pattern);
-
-		var winning = TicTacToeMain.isWin(board, color);
-
-		assertThat(winning).isEqualTo(expectedToWin);
+	void isWinDetectsALineOnlyForItsOwnColor(String pattern, Stone color, boolean expectedToWin) {
+		assertThat(TicTacToeMain.isWin(toBoard(pattern), color)).isEqualTo(expectedToWin);
 	}
 
-	@Test
-	void given_twoGreedyPlayers_when_aGameIsPlayed_then_theStartingPlayerWins() {
-		// both always fill the top-most-left free field, which lets X complete the 0-4-8 diagonal
-		assertThat(TicTacToeMain.play(xPlayer, oPlayer)).isEqualTo(Stone.CROSS);
-	}
-
-	@Test
-	void given_theSamePlayerTwice_when_aGameIsStarted_then_throwsIllegalArgumentException() {
-		assertThatThrownBy(() -> TicTacToeMain.play(xPlayer, xPlayer))
-				.isInstanceOf(IllegalArgumentException.class);
-	}
-
-	@Test
+	@ParameterizedTest(name = "{0} vs {1} -> {2}")
+	@MethodSource("games")
 	@StdIo
-	void given_twoPerfectPlayers_when_aGameIsPlayed_then_itIsADraw(StdOut out) {
-		var winner = TicTacToeMain.play(new PerfectPlayer(), new PerfectPlayer());
+	void playReturnsTheWinnerAndPrintsTheResult(TicTacToePlayer x, TicTacToePlayer o, Stone expectedWinner,
+			String expectedOutput, StdOut out) {
+		assertThat(TicTacToeMain.play(x, o)).isEqualTo(expectedWinner);
+		assertThat(out.capturedString()).contains(expectedOutput);
+	}
 
-		assertThat(winner).isNull();
-		assertThat(out.capturedLines()).contains("it's a draw!");
+	@Test
+	void playRejectsTheSamePlayerTwice() {
+		assertThatThrownBy(() -> TicTacToeMain.play(xPlayer, xPlayer))
+				.isInstanceOf(IllegalArgumentException.class)
+				.hasMessage("players must differ");
 	}
 
 	@ParameterizedTest(name = "O plays to {0}")
 	@ValueSource(ints = { -1, 9, 0 }) // outside the board, outside the board, already taken by X
 	@StdIo
-	void given_aPlayerWithAnInvalidMove_when_aGameIsPlayed_then_throwsIllegalStateException(int invalidMove,
-			StdOut out) {
+	void playRejectsAnInvalidMove(int invalidMove, StdOut out) {
 		TicTacToePlayer cheatingPlayer = (board, color) -> invalidMove;
 
 		assertThatThrownBy(() -> TicTacToeMain.play(xPlayer, cheatingPlayer))
 				.isInstanceOf(IllegalStateException.class)
 				.hasMessage("cannot play to position " + invalidMove);
-		assertThat(out.capturedString()).contains("X"); // the board is printed before the error
+		// before the error the board is printed: X (greedy) has already played to field 0
+		assertThat(withoutColors(out.capturedString())).startsWith("X  1  2");
 	}
 
 	@Test
-	void given_aBoard_when_toStringIsCalled_then_showsTheStonesAndTheFreeFieldNumbers() {
-		var board = toBoard("X.. .O. ...");
+	void toStringShowsTheStonesAndTheFreeFieldNumbers() {
+		var text = TicTacToeMain.toString(toBoard("X.. .O. ..."));
 
-		var text = TicTacToeMain.toString(board);
-
-		// remove the color codes (like \033[1m) so only the visible text is left
-		var visibleText = text.replaceAll("\033\\[[0-9;]*m", "");
-		assertThat(visibleText).isEqualTo("""
+		assertThat(withoutColors(text)).isEqualTo("""
 				X  1  2 \s
 				3  O  5 \s
 				6  7  8 \s
 				""");
 	}
 
-	@Test
-	void given_aWrongBoard_when_theHelperIsUsed_then_throwsIllegalArgumentException() {
-		assertThatThrownBy(() -> toBoard("XX")).isInstanceOf(IllegalArgumentException.class);
-		assertThatThrownBy(() -> toBoard("XXX ... ..A")).isInstanceOf(IllegalArgumentException.class);
+	@ParameterizedTest
+	@ValueSource(strings = { "XX", "XXX ... ..A" }) // too short, unknown character
+	void toBoardRejectsAnInvalidPattern(String pattern) {
+		assertThatThrownBy(() -> toBoard(pattern)).isInstanceOf(IllegalArgumentException.class);
 	}
 
-	@Test
-	void given_aStone_when_opponentIsCalled_then_returnsTheOtherStone() {
-		assertThat(Stone.CROSS.opponent()).isEqualTo(Stone.CIRCLE);
-		assertThat(Stone.CIRCLE.opponent()).isEqualTo(Stone.CROSS);
+	@ParameterizedTest(name = "{0} -> {1}")
+	@CsvSource({ "CROSS, CIRCLE", "CIRCLE, CROSS" })
+	void opponentReturnsTheOtherStone(Stone stone, Stone expectedOpponent) {
+		assertThat(stone.opponent()).isEqualTo(expectedOpponent);
 	}
 
 	@Test
 	@StdIo({ "3", "4", "5" }) // the human (X) plays the middle row, the greedy player only gets 0 and 1
-	void given_humanInput_when_mainIsStarted_then_theHumanWins(StdOut out) {
+	void mainLetsTheHumanWinWithTheMiddleRow(StdOut out) {
 		TicTacToeMain.main(new String[0]);
 
 		assertThat(out.capturedString()).contains("...and the winner is: CROSS");
 	}
 
 	/**
-	 * The board constellations for the parameterized test above, each one as
-	 * pattern / color to check / expected result.
+	 * Removes the color codes (like \033[1m) so only the visible text is left.
+	 */
+	private static String withoutColors(String text) {
+		return text.replaceAll("\033\\[[\\d;]*m", "");
+	}
+
+	/**
+	 * The board constellations for the isWin test, each one as pattern / color to check /
+	 * expected result.
 	 */
 	private static Stream<Arguments> boardConstellations() {
 		return Stream.of(
@@ -155,5 +150,23 @@ class TicTacToeMainTest implements WithAssertions {
 				Arguments.of(DRAW_BOARD, Stone.CIRCLE, false),
 				// a line only wins for its own color
 				Arguments.of(TOP_ROW_O_WINS, Stone.CROSS, false));
+	}
+
+	/**
+	 * Complete games as X player / O player / expected winner (null = draw) / expected output.
+	 */
+	private static Stream<Arguments> games() {
+		return Stream.of(
+				// both greedy players fill the top-most-left free field, X completes the 0-4-8 diagonal
+				Arguments.of(named("Greedy", new GreedyPlayer()), named("Greedy", new GreedyPlayer()),
+						Stone.CROSS, "...and the winner is: CROSS"),
+				// the perfect player wins against the greedy player, no matter who starts
+				Arguments.of(named("Perfect", new PerfectPlayer()), named("Greedy", new GreedyPlayer()),
+						Stone.CROSS, "...and the winner is: CROSS"),
+				Arguments.of(named("Greedy", new GreedyPlayer()), named("Perfect", new PerfectPlayer()),
+						Stone.CIRCLE, "...and the winner is: CIRCLE"),
+				// two perfect players always play a draw
+				Arguments.of(named("Perfect", new PerfectPlayer()), named("Perfect", new PerfectPlayer()),
+						null, "it's a draw!"));
 	}
 }
