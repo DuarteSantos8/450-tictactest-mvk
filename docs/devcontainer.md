@@ -27,7 +27,8 @@ Ablauf (`.github/workflows/devcontainer-release.yml`):
 1. **Pull Request**, der `.devcontainer/**` ändert: Image wird nur **testweise gebaut**
    (kein Push) → der Dockerfile wird geprüft.
 2. **Push auf `main`**, der `.devcontainer/Dockerfile` ändert: Image wird gebaut und als
-   `…/tictactest-devcontainer:v1.0.<Lauf-Nummer>` (und `:latest`) in die GHCR **gepusht**.
+   `…/tictactest-devcontainer:v1.0.<Lauf-Nummer>` in die GHCR **gepusht** (bewusst ohne
+   `:latest`, damit kein noch nicht freigegebenes Image als „neuste Version“ gilt).
    Die Version zählt so automatisch hoch.
 3. **Auto-PR:** Nach dem erfolgreichen Push erstellt der Workflow automatisch einen Pull
    Request, der die neue Version in `.devcontainer/devcontainer.json` **und in allen

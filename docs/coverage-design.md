@@ -8,7 +8,9 @@ Kurzes Design der Lösung (Auftrag 2). Umgesetzt in `coverage-pages.yml` + `page
   Aus dem JaCoCo-XML-Report (`build/reports/jacoco/test/jacocoTestReport.xml`),
   ausgelesen von `scripts/coverage.sh`.
 - **Welche Metrik?**
-  Line-Coverage in Prozent (eine Nachkommastelle).
+  Branch-Coverage in Prozent (zwei Nachkommastellen), gleiche Metrik wie die
+  Coverage-Verification im Build (TZ-08). Bis zum 25.10.2026 wurde Line-Coverage
+  gespeichert, darum springt die Kurve dort auf 100 %.
 - **Wo/wie werden historische Daten gespeichert?**
   Als CSV (`coverage-history.csv`) auf dem `gh-pages`-Branch.
   Format: `Datum,Commit,Coverage`.

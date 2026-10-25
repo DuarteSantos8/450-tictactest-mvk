@@ -17,8 +17,16 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      # Standard-Action fuer Gradle: richtet Gradle ein und cached die Downloads zwischen den Laeufen
+      - uses: gradle/actions/setup-gradle@v6
+
       # nur kompilieren und JAR bauen, die Tests laufen im Job test
       - run: ./gradlew assemble
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: jar
+          path: build/libs/*.jar
 
   test:
     needs: build
@@ -35,6 +43,9 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      # Standard-Action fuer Gradle: richtet Gradle ein und cached die Downloads zwischen den Laeufen
+      - uses: gradle/actions/setup-gradle@v6
+
       # Unit-Tests + E2E-Tests + JaCoCo-Report + Coverage-Verification (min. 90 % Branch) + Mutation Testing
       - run: ./gradlew check pitest
 
@@ -43,13 +54,16 @@ jobs:
         if: always()
         with:
           name: test-report
-          path: build/reports/tests # Unit-Tests (test/) und E2E-Tests (e2eTest/)
+          # HTML-Reports (Unit-Tests test/, E2E-Tests e2eTest/) und die JUnit-XML-Dateien
+          path: |
+            build/reports/tests
+            build/test-results
 
       - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: coverage-report
-          path: build/reports/jacoco/test/html
+          path: build/reports/jacoco/test # HTML-Report und jacocoTestReport.xml
 
       - uses: actions/upload-artifact@v7
         if: always()

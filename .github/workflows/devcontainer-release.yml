@@ -54,9 +54,8 @@ jobs:
         with:
           context: .devcontainer
           push: ${{ env.PUSH }}
-          tags: |
-            ${{ env.IMAGE }}:${{ env.VERSION }}
-            ${{ env.IMAGE }}:latest
+          # kein :latest, damit nie ein noch nicht freigegebenes Image als "neuste Version" gilt
+          tags: ${{ env.IMAGE }}:${{ env.VERSION }}
 
       # Ab hier nur nach einem erfolgreichen Push: neue Version ueberall eintragen
       - name: devcontainer.json und CI-Workflows auf neue Version setzen
