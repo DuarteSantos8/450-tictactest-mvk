@@ -123,7 +123,9 @@ class TicTacToeMainTest implements WithAssertions {
 	}
 
 	@Test
-	@StdIo // no input at all
+	// only an empty line, then the input ends. A plain @StdIo without values would not replace
+	// System.in at all, the test would then wait for the real keyboard (e.g. in PITest)
+	@StdIo("")
 	void mainStopsWithAMessageInsteadOfAStackTrace(StdOut out) {
 		TicTacToeMain.main(new String[0]);
 
