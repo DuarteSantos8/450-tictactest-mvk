@@ -34,7 +34,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      # Tests + JaCoCo-Report + Coverage-Verification (min. 90 % Branch) + Mutation Testing
+      # Unit-Tests + E2E-Tests + JaCoCo-Report + Coverage-Verification (min. 90 % Branch) + Mutation Testing
       - run: ./gradlew check pitest
 
       # Alle Reports als Artifacts speichern (fuer jeden Commit, auch wenn ein Test fehlschlaegt)
@@ -42,7 +42,7 @@ jobs:
         if: always()
         with:
           name: test-report
-          path: build/reports/tests/test
+          path: build/reports/tests # Unit-Tests (test/) und E2E-Tests (e2eTest/)
 
       - uses: actions/upload-artifact@v7
         if: always()
