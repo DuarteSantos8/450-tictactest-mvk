@@ -1,6 +1,7 @@
 package ch.bbw.m450.tictactoe.e2e;
 
-import java.util.NoSuchElementException;
+import java.util.Arrays;
+import java.util.List;
 
 import org.assertj.core.api.WithAssertions;
 import org.junit.jupiter.api.Tag;
@@ -27,13 +28,15 @@ class GameEndToEndTest implements WithAssertions {
 
 	private static final String[] NO_ARGS = {};
 
+	private static final String X_WINS = "...and the winner is: CROSS\n";
+
 	// E2E-01: X plays the middle row 3-4-5, O (greedy) only gets 0 and 1
 	@Test
 	@StdIo({ "3", "4", "5" })
 	void humanWins(StdOut out) {
 		TicTacToeMain.main(NO_ARGS);
 
-		assertThat(out.capturedString()).endsWith("...and the winner is: CROSS\n");
+		assertThat(out.capturedString()).endsWith(X_WINS);
 	}
 
 	// E2E-02: X plays 8, 7, 3, O (greedy) fills 0, 1, 2 and wins with the top row
@@ -60,8 +63,8 @@ class GameEndToEndTest implements WithAssertions {
 	void invalidInputIsAskedAgain(StdOut out) {
 		TicTacToeMain.main(NO_ARGS);
 
-		assertThat(out.capturedLines()).filteredOn(line -> line.startsWith("invalid input")).hasSize(4);
-		assertThat(out.capturedString()).endsWith("...and the winner is: CROSS\n");
+		assertThat(invalidInputMessages(out)).hasSize(4);
+		assertThat(out.capturedString()).endsWith(X_WINS);
 	}
 
 	// E2E-05: a field that is already taken (by O or by X itself) is asked again
@@ -70,8 +73,8 @@ class GameEndToEndTest implements WithAssertions {
 	void takenFieldIsAskedAgain(StdOut out) {
 		TicTacToeMain.main(NO_ARGS);
 
-		assertThat(out.capturedLines()).filteredOn(line -> line.startsWith("invalid input")).hasSize(2);
-		assertThat(out.capturedString()).endsWith("...and the winner is: CROSS\n");
+		assertThat(invalidInputMessages(out)).hasSize(2);
+		assertThat(out.capturedString()).endsWith(X_WINS);
 	}
 
 	// E2E-06: malicious input (terminal control characters, shell command, format string)
@@ -83,15 +86,28 @@ class GameEndToEndTest implements WithAssertions {
 
 		assertThat(out.capturedString())
 				.doesNotContain("\u001b[2J", "rm -rf", "%s")
-				.endsWith("...and the winner is: CROSS\n");
+				.endsWith(X_WINS);
 	}
 
-	// E2E-07: the input ends in the middle of the game (e.g. Ctrl+D): the game must stop and
-	// not wait forever for the next line
+	// E2E-07: the input ends in the middle of the game (e.g. Ctrl+D): the game must stop with a
+	// message, not wait forever for the next line and not crash with a stack trace
 	@Test
 	@StdIo({ "abc" })
-	void endOfInputStopsTheGame() {
-		assertThatThrownBy(() -> TicTacToeMain.main(NO_ARGS)).isInstanceOf(NoSuchElementException.class);
+	void endOfInputStopsTheGame(StdOut out) {
+		TicTacToeMain.main(NO_ARGS);
+
+		assertThat(out.capturedString()).endsWith("game aborted: no more input\n");
+	}
+
+	// E2E-09: endless invalid input (e.g. "yes abc | java -jar ...") must not keep the game busy
+	// forever: after 5 invalid inputs for the same move the game stops
+	@Test
+	@StdIo({ "a", "b", "c", "d", "e", "f", "g" })
+	void endlessInvalidInputStopsTheGame(StdOut out) {
+		TicTacToeMain.main(NO_ARGS);
+
+		assertThat(invalidInputMessages(out)).hasSize(5);
+		assertThat(out.capturedString()).endsWith("game aborted: too many invalid inputs\n");
 	}
 
 	// E2E-08: the perfect player calculates all possible games (minimax), that must not block
@@ -102,5 +118,9 @@ class GameEndToEndTest implements WithAssertions {
 	void twoPerfectPlayersFinishWithinOneSecond(StdOut out) {
 		assertThat(TicTacToeMain.play(new PerfectPlayer(), new PerfectPlayer())).isNull();
 		assertThat(out.capturedString()).endsWith("it's a draw!\n");
+	}
+
+	private static List<String> invalidInputMessages(StdOut out) {
+		return Arrays.stream(out.capturedLines()).filter(line -> line.startsWith("invalid input")).toList();
 	}
 }

@@ -26,7 +26,7 @@ application {
 	mainClass = 'ch.bbw.m450.tictactoe.TicTacToeMain'
 }
 
-// Ausfuehrbares JAR: Main-Class im Manifest, damit "java -jar tictactest-1.0.0.jar" funktioniert
+// Ausfuehrbares JAR: Main-Class im Manifest, damit "java -jar tictactest-<version>.jar" funktioniert
 jar {
 	manifest {
 		attributes(

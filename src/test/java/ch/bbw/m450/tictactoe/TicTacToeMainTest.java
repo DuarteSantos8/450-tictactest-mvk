@@ -122,6 +122,16 @@ class TicTacToeMainTest implements WithAssertions {
 		assertThat(out.capturedString()).contains("...and the winner is: CROSS");
 	}
 
+	@Test
+	// only an empty line, then the input ends. A plain @StdIo without values would not replace
+	// System.in at all, the test would then wait for the real keyboard (e.g. in PITest)
+	@StdIo("")
+	void mainStopsWithAMessageInsteadOfAStackTrace(StdOut out) {
+		TicTacToeMain.main(new String[0]);
+
+		assertThat(out.capturedString()).endsWith("game aborted: no more input\n");
+	}
+
 	/**
 	 * Removes the color codes (like \033[1m) so only the visible text is left.
 	 */

@@ -1,7 +1,7 @@
 # Testkonzept – TicTacTest (Modul 450)
 
 **Projekt:** TicTacTest (TicTacToe-Spiel-Engine in Java)
-**Dokument-Version:** 0.7 (IST)
+**Dokument-Version:** 0.8 (IST)
 **Autor / Rolle:** Duarte Santos – Entwickler = Tester (bewertete Einzelarbeit),
 Kontakt: duarte.lavouras@lernende.bbw.ch
 **Auftraggeber / Projektleitung:** Dominik Berner (BBW, Modul 450)
@@ -48,12 +48,12 @@ Die Ziele sind nummeriert, damit die Testfälle (Abschnitt 7) darauf verweisen k
 
 | Stufe | Was | Wo | Anzahl |
 |---|---|---|---|
-| Unit-Tests (Basis) | einzelne Methoden und Player, schnell | `./gradlew test` | 43 |
-| End-to-End-Tests (Spitze) | ganzes Spiel über `main()` mit Tastatureingabe und Ausgabe | `./gradlew e2eTest` | 8 |
-| Release-Smoke-Test | das fertige JAR wird gestartet und ein Spiel gespielt | `release.yml` | 1 |
+| Unit-Tests (Basis) | einzelne Methoden und Player, schnell | `./gradlew test` | 46 |
+| Integration | `play(...)` mit echten Playern (ganze Spiele in `TicTacToeMainTest`, jqwik) | `./gradlew test` | in den 46 enthalten |
+| End-to-End / System (Spitze) | ganzes Spiel über `main()` mit Tastatureingabe und Ausgabe, in derselben JVM | `./gradlew e2eTest` | 9 |
+| Release-Smoke-Test | das fertige JAR wird mit `java -jar` als eigener Prozess gestartet | `release.yml` | 1 |
 
-Eine eigene Integrationsstufe gibt es nicht: das Zusammenspiel von `play(...)` mit echten Playern
-wird schon in den Unit-Tests geprüft (ganze Spiele in `TicTacToeMainTest`). Dazu kommen:
+Manuelle Systemtests (von Hand spielen) gibt es keine festgelegten, siehe Abschnitt 10. Dazu kommen:
 
 - **StdIn/StdOut-Tests mit Pioneer:** `@StdIo` ersetzt die Tastatur-Eingabe und fängt die
   Konsolen-Ausgabe ab (`HumanPlayerTest`, `main` und `play` in `TicTacToeMainTest`).
@@ -131,16 +131,12 @@ void isWinDetectsALineOnlyForItsOwnColor(String pattern, Stone color, boolean ex
 
 | Metrik | Wert | Ziel |
 |---|---|---|
-| Branch-Coverage | **100 %** (98 von 98) | min. 90 % (im Build erzwungen) |
-| Line-Coverage | **98.6 %** (71 von 72) | – |
-| Mutation Score (PITest) | **100 %** (76 von 76 Mutanten gekillt) | min. 90 % (im Build erzwungen) |
+| Branch-Coverage | **100 %** (102 von 102) | min. 90 % (im Build erzwungen) |
+| Line-Coverage | **98.7 %** (78 von 79) | – |
+| Mutation Score (PITest) | **100 %** (80 von 80 Mutanten gekillt) | min. 90 % (im Build erzwungen) |
 
 Die eine nicht abgedeckte Zeile ist der unsichtbare Standard-Konstruktor von `TicTacToeMain`
 (die Klasse hat nur statische Methoden, darum wird nie ein Objekt davon erstellt).
-
-Früher überlebte ein Mutant: `score > bestScore` im `PerfectPlayer` wurde zu `score >= bestScore`.
-Dann nimmt der Player bei gleich guten Zügen den letzten statt den ersten Zug. Der Test
-`takesTheFirstFieldWhenAllMovesAreEquallyGood` (leeres Brett → Feld 0) erkennt das jetzt.
 
 ## 5. Testrahmen und Erfolgskriterien
 
@@ -171,8 +167,6 @@ Dann nimmt der Player bei gleich guten Zügen den letzten statt den ersten Zug. 
 - **Release:** `.github/workflows/release.yml` läuft nur bei einem Tag `vX.Y.Z`. Er führt
   `./gradlew check` aus und startet danach das gebaute JAR als Smoke-Test (Eingabe `3, 4, 5`
   → X gewinnt). Schlägt etwas fehl, wird kein Release erstellt (siehe `RELEASE.md`).
-- Der Parameterized Test braucht keine Zusatz-Abhängigkeit: `org.junit.jupiter:junit-jupiter`
-  ist ein Sammel-Artefakt und enthält `junit-jupiter-params` bereits.
 
 ## 7. Testfallbeschreibungen
 
@@ -214,16 +208,19 @@ Test hat ein Timeout von 5 s in einem eigenen Thread, damit ein hängendes Spiel
 | E2E-04 | TZ-09 | `abc`, `3`, leer, `4`, `-1`, `99999999999999999999`, `5` | 4 × „invalid input“, Spiel läuft weiter, X gewinnt | vor dem Fix: Absturz mit `NumberFormatException` (F-01); jetzt wie erwartet |
 | E2E-05 | TZ-09 | `3`, `0` (von O besetzt), `3` (eigenes), `4`, `5` | 2 × „invalid input“, X gewinnt | vor dem Fix: Absturz mit `IllegalStateException` (F-02); jetzt wie erwartet |
 | E2E-06 | TZ-09 | Steuerzeichen `ESC[2J`, `4; rm -rf /`, `%s%n`, dann `3, 4, 5` | abgelehnt und **nicht** wieder ausgegeben, X gewinnt | wie erwartet |
-| E2E-07 | TZ-09 | `abc`, dann Ende der Eingabe (Ctrl+D) | Spiel endet sofort, wartet nicht endlos (DoS) | endet mit `NoSuchElementException` (F-03, offen) |
+| E2E-07 | TZ-09 | `abc`, dann Ende der Eingabe (Ctrl+D) | Meldung „game aborted: no more input“, kein Stacktrace | vor dem Fix: Absturz mit `NoSuchElementException` (F-03); jetzt wie erwartet |
 | E2E-08 | TZ-09 | – (PerfectPlayer gegen PerfectPlayer) | ganzes Spiel in < 1 s (DoS durch langsamen Minimax) | wie erwartet (ca. 0.04 s) |
+| E2E-09 | TZ-09 | 7 ungültige Eingaben (wie endlose Eingabe `yes abc \| java -jar …`) | nach 5 × „invalid input“: „game aborted: too many invalid inputs“ | vor dem Fix: Endlosschleife (F-04); jetzt wie erwartet |
 
 ### 7.2 Gefundene Fehler
 
-| ID | Fehler | Gefunden mit | Status |
+| ID | Fehler | Gefunden | Status |
 |---|---|---|---|
-| F-01 | Eingabe ohne Zahl (`abc`, leer, zu grosse Zahl) bringt das Spiel mit `NumberFormatException` zum Absturz | E2E-04 | **behoben test-first**: zuerst `HumanPlayerTest.asksAgainUntilTheInputIsAFieldOnTheBoard` (rot), dann Fix im `HumanPlayer` (grün) |
-| F-02 | Zahl ausserhalb 0–8 oder besetztes Feld beendet das Spiel mit `IllegalStateException` | E2E-05 | **behoben** mit dem gleichen Fix: der `HumanPlayer` fragt nochmals |
-| F-03 | Endet die Eingabe mitten im Spiel, stürzt das Programm mit `NoSuchElementException` ab, statt sauber zu beenden | E2E-07 | offen (kein Hängen, darum kein DoS; nur unschöne Fehlermeldung) |
+| F-01 | Eingabe ohne Zahl (`abc`, leer, zu grosse Zahl) bringt das Spiel mit `NumberFormatException` zum Absturz | von Hand beim Planen der E2E-Fälle, abgesichert mit E2E-04 | **behoben test-first** (v1.0.2): zuerst `HumanPlayerTest.asksAgainUntilTheInputIsAFieldOnTheBoard` (rot), dann Fix im `HumanPlayer` (grün) |
+| F-02 | Zahl ausserhalb 0–8 oder besetztes Feld beendet das Spiel mit `IllegalStateException` | wie F-01, abgesichert mit E2E-05 | **behoben** mit dem gleichen Fix (v1.0.2) |
+| F-03 | Endet die Eingabe mitten im Spiel, stürzt das Programm mit Stacktrace ab | E2E-07 | **behoben test-first** (v1.0.3): `HumanPlayerTest.stopsWhenTheInputEnds` (rot), dann Fix |
+| F-04 | Endlose ungültige Eingabe hält das Spiel für immer beschäftigt (DoS) | Review mit `yes abc \| java -jar …`, abgesichert mit E2E-09 | **behoben test-first** (v1.0.3): `HumanPlayerTest.givesUpAfterFiveInvalidInputs` (rot), dann max. 5 Eingaben pro Zug |
+| F-05 | Eine extrem lange Zeile (z.B. 50 MB ohne Zeilenumbruch) führt zu `OutOfMemoryError` | Review (Test mit 50-MB-Zeile) | offen, siehe Abschnitt 10 |
 
 ## 8. Testplan und Zuständigkeiten
 
@@ -235,33 +232,25 @@ Test hat ein Timeout von 5 s in einem eigenen Thread, damit ein hängendes Spiel
 
 ## 9. Testumfang
 
-**Gesamt: 51 Tests** (43 Unit + 8 E2E), zuletzt lokal mit `./gradlew clean check pitest` ausgeführt: **0 Fehler**.
+**Gesamt: 55 Tests** (46 Unit + 9 E2E), zuletzt lokal mit `./gradlew clean check pitest` ausgeführt: **0 Fehler**.
 
 | Testklasse | Anzahl | Inhalt |
 |---|---|---|
-| `TicTacToeMainTest` | 26 | 12 × `isWin`, 4 ganze Spiele, 3 × ungültiger Zug, 2 × falsches Muster, 2 × `opponent()`, 3 Einzeltests |
+| `TicTacToeMainTest` | 27 | 12 × `isWin`, 4 ganze Spiele, 3 × ungültiger Zug, 2 × falsches Muster, 2 × `opponent()`, 4 Einzeltests |
 | `ComputerPlayersTest` | 5 | 2 × volles Brett (Greedy + Perfect), 3 × Zug des GreedyPlayer |
 | `PerfectPlayerTest` | 6 | 3 × blocken, 2 × gewinnen, 1 × erstes von gleich guten Feldern |
-| `HumanPlayerTest` | 4 | StdIn/StdOut mit Pioneer, ungültige Eingabe, besetztes Feld |
+| `HumanPlayerTest` | 6 | StdIn/StdOut mit Pioneer, ungültige Eingabe, besetztes Feld, Eingabeende, zu viele Fehleingaben |
 | `PerfectPlayerPropertiesTest` | 2 | jqwik-Properties (100 bzw. 50 Durchläufe) |
-| `GameEndToEndTest` | 8 | E2E-01 bis E2E-08 (eigener Task `e2eTest`) |
+| `GameEndToEndTest` | 9 | E2E-01 bis E2E-09 (eigener Task `e2eTest`) |
 
-Parameterized Tests zählen pro Datensatz als eigener Test. Der frühere `DummyTest` (nur Nachweis,
-dass JUnit und AssertJ eingebunden sind) wurde gelöscht, weil das die echten Tests jetzt zeigen.
+Parameterized Tests zählen pro Datensatz als eigener Test.
 
-Bei jedem Push/Pull-Request läuft zusätzlich die GitHub-Actions-Pipeline; der Build ist grün.
+## 10. Offene Risiken und nicht getestet
 
-## 10. Screenshots
-
-Alle Unit-Tests erfolgreich (Stand 42 Tests, vor den E2E-Tests):
-
-![Alle Tests erfolgreich (42/42, 100%)](screenshots/all-tests-passing.png)
-
-Ein bewusst fehlgeschlagener Test (zum Nachweis, damals mit 36 Tests; danach wieder zurückgesetzt) – Übersicht,
-Klassendetail und Stacktrace:
-
-![Ein Test schlägt fehl (Übersicht)](screenshots/one-test-failing-overview.png)
-
-![Ein Test schlägt fehl (Klassendetail)](screenshots/one-test-failing-detail.png)
-
-![Stacktrace des fehlschlagenden Tests](screenshots/one-test-failing-stacktrace.png)
+| Risiko / Lücke | Warum offen | Mögliches neues Requirement |
+|---|---|---|
+| F-05: extrem lange Eingabezeile → `OutOfMemoryError` | `Scanner.nextLine()` liest die ganze Zeile; ein Limit bräuchte einen eigenen Leser | Eingabe nach z.B. 100 Zeichen abschneiden |
+| Keine festgelegten manuellen Tests (Farben im Terminal, Bedienbarkeit) | nur automatisierte Tests vorhanden | Checkliste für einen kurzen manuellen Test vor jedem Release |
+| Nur Linux (CI) und macOS (lokal) getestet, Windows-Terminal nicht | keine Windows-Umgebung | CI zusätzlich auf `windows-latest` |
+| „Verliert nie“ prüft jqwik nur mit zufälligen Gegnern (100 Spiele), nicht alle möglichen Spiele | Stichprobe reicht als Beispiel für Property-based Testing | vollständige Suche über alle Spielverläufe |
+| E2E-Tests laufen in derselben JVM wie die Tests (`main()` direkt aufgerufen) | einfacher und schnell; der echte Prozess wird nur im Release-Smoke-Test gestartet | E2E-Tests gegen das gebaute JAR |
