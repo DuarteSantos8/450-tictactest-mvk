@@ -22,7 +22,7 @@ class HumanPlayerTest implements WithAssertions {
 		var move = player.play(new Stone[TicTacToeMain.BOARD_SIZE], Stone.CROSS);
 
 		assertThat(move).isEqualTo(4);
-		assertThat(out.capturedString()).contains("where to to put the next CROSS? (0-8): ");
+		assertThat(out.capturedString()).contains("where to put the next CROSS? (0-8): ");
 	}
 
 	@Test
