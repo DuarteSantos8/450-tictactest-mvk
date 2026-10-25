@@ -14,7 +14,7 @@ dependencies {
 	testImplementation 'org.junit.jupiter:junit-jupiter'
 	testImplementation 'org.assertj:assertj-core:3.27.7'
 	testImplementation 'org.junit-pioneer:junit-pioneer:2.3.0' // StdIn/StdOut-Tests
-	testImplementation 'net.jqwik:jqwik:1.10.1' // zusaetzliches Testframework (Property-based Testing)
+	testImplementation 'net.jqwik:jqwik:1.10.2' // zusaetzliches Testframework (Property-based Testing)
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
@@ -61,7 +61,7 @@ check.dependsOn jacocoTestCoverageVerification
 
 // Mutation Testing: ./gradlew pitest -> Report unter build/reports/pitest
 pitest {
-	pitestVersion = '1.30.0'
+	pitestVersion = '1.30.1'
 	junit5PluginVersion = '1.2.3'
 	targetClasses = ['ch.bbw.m450.tictactoe.*']
 	outputFormats = ['HTML', 'XML']
