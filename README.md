@@ -12,8 +12,9 @@ TicTacToe-Spiel in Java, das im Modul 450 (Applikationen testen) mit Tests abges
 | Befehl | Was passiert |
 |---|---|
 | `./gradlew run` | Spiel starten (Mensch gegen GreedyPlayer) |
-| `./gradlew test` | Tests ausführen + JaCoCo-Report |
-| `./gradlew check` | Tests + Coverage-Verification (min. 90 % Branch-Coverage) |
+| `./gradlew test` | Unit-Tests ausführen + JaCoCo-Report |
+| `./gradlew e2eTest` | End-to-End-Tests (ganzes Spiel über Tastatureingabe) |
+| `./gradlew check` | Unit- und E2E-Tests + Coverage-Verification (min. 90 % Branch-Coverage) |
 | `./gradlew pitest` | Mutation Testing mit PITest |
 
 Reports liegen danach unter `build/reports/` (`tests/`, `jacoco/`, `pitest/`).
