@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TicTacTest</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h1>TicTacTest</h1>
+
+  <p>
+    Du spielst <b>X</b> gegen den Computer (<b>O</b>). Tippe die Nummer eines freien Feldes (0–8) ins Terminal
+    und drücke <kbd>Enter</kbd>. Wer zuerst drei in einer Reihe hat, gewinnt.
+    Nach Spielende <kbd>Enter</kbd> drücken, dann startet ein neues Spiel.
+  </p>
+
+  <pre class="board">0 | 1 | 2
+3 | 4 | 5
+6 | 7 | 8</pre>
+
+  <iframe id="terminal" title="TicTacTest Terminal"></iframe>
+
+  <footer>
+    Backend: <span id="backend-version">?</span> ·
+    Frontend: <span id="frontend-version">?</span>
+  </footer>
+
+  <!-- config.js kommt von der Umgebung (lokal oder Cloud), nicht aus dem Release -->
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

@@ -66,6 +66,7 @@ jobs:
 
           echo "VERSION=${VERSION}" >> "$GITHUB_ENV"
           echo "JAR=tictactest-${VERSION}.jar" >> "$GITHUB_ENV"
+          echo "FRONTEND=tictactest-frontend-${VERSION}.zip" >> "$GITHUB_ENV"
 
       # 4. Tests ausfuehren (inkl. Coverage-Verification). Schlaegt ein Test fehl, stoppt der Release hier.
       - name: Tests ausfuehren
@@ -82,12 +83,24 @@ jobs:
           printf '3\n4\n5\n' | java -jar "build/libs/${JAR}" | tee smoke.log
           grep -q "the winner is: CROSS" smoke.log
 
-      # 7. Pruefsumme, damit man kontrollieren kann, dass der Download nicht veraendert wurde
-      - name: SHA-256-Pruefsumme erstellen
-        working-directory: build/libs
-        run: sha256sum "${JAR}" > "${JAR}.sha256"
+      # 7. Frontend als Archiv: version.txt kommt automatisch aus dem Release,
+      #    config.js (URL der Web-Konsole) gehoert zur Umgebung und kommt NICHT ins Archiv.
+      #    Im Image gibt es kein zip, darum das jar-Werkzeug aus dem JDK (erzeugt ein normales ZIP).
+      - name: Frontend-Archiv erstellen
+        run: |
+          cp -r frontend build/frontend
+          rm build/frontend/config.js
+          echo "${VERSION}" > build/frontend/version.txt
+          jar --create --no-manifest --file "build/libs/${FRONTEND}" -C build/frontend .
 
-      # 8. Text fuer den Release zusammenstellen
+      # 8. Pruefsummen, damit man kontrollieren kann, dass der Download nicht veraendert wurde
+      - name: SHA-256-Pruefsummen erstellen
+        working-directory: build/libs
+        run: |
+          sha256sum "${JAR}" > "${JAR}.sha256"
+          sha256sum "${FRONTEND}" > "${FRONTEND}.sha256"
+
+      # 9. Text fuer den Release zusammenstellen
       - name: Release-Text erstellen
         run: |
           {
@@ -101,10 +114,12 @@ jobs:
             cat changes.md
             echo ""
             echo "**Artefakt:** \`${JAR}\` (starten mit \`java -jar ${JAR}\`, benötigt Java 25)"
+            echo ""
+            echo "**Frontend:** \`${FRONTEND}\` (statische Webseite, siehe docs/webkonsole.md)"
           } > release-notes.md
           cat release-notes.md >> "$GITHUB_STEP_SUMMARY"
 
-      # 9. GitHub Release erstellen und das JAR anhaengen
+      # 10. GitHub Release erstellen und JAR + Frontend anhaengen
       - name: GitHub Release erstellen
         uses: softprops/action-gh-release@v3
         with:
@@ -114,3 +129,5 @@ jobs:
           files: |
             build/libs/${{ env.JAR }}
             build/libs/${{ env.JAR }}.sha256
+            build/libs/${{ env.FRONTEND }}
+            build/libs/${{ env.FRONTEND }}.sha256
