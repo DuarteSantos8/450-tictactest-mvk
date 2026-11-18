@@ -6,7 +6,7 @@ Die Konfiguration liegt in [`infra/`](../infra).
 ## AWS Learner Lab
 
 - Zugang über die Einladung zu AWS Academy, Kurs **324 HS26 IAC** → Learner Lab → *Start Lab*.
-- Zugriff funktioniert: _(Datum eintragen)_
+- Zugriff funktioniert (getestet am 18.11.2026 mit `aws sts get-caller-identity`, Rolle `voclabs`).
 - Verfügbare Dienste (Auswahl): EC2, S3, VPC, Systems Manager (SSM), CloudWatch.
   Eigene IAM-Rollen kann man nicht anlegen, es gibt nur die vorgegebene `LabRole` bzw. das `LabInstanceProfile`.
 - Region: `us-east-1`.
@@ -52,6 +52,25 @@ tofu output    # IP und SSH-Befehl anzeigen
 ssh -i ~/.ssh/tictactest ec2-user@<public_ip>
 tofu destroy   # alles wieder löschen
 ```
+
+## Nachweis (18.11.2026)
+
+`tofu plan` zeigte `3 to add, 0 to change, 0 to destroy` (Key-Pair, Security Group, Instanz). Nach `tofu apply`:
+
+```text
+public_ip   = "184.192.226.235"
+ssh_command = "ssh -i ~/.ssh/tictactest ec2-user@184.192.226.235"
+
+$ ssh -i ~/.ssh/tictactest ec2-user@184.192.226.235
+Login OK als ec2-user auf ip-172-31-92-238.ec2.internal
+PRETTY_NAME="Amazon Linux 2023.12.20261117"
+```
+
+![SSH-Login auf die EC2-Instanz](img/iac-ssh-login.png)
+
+![Instanz in der EC2-Konsole](img/iac-ec2-konsole.png)
+
+Danach wurde alles mit `tofu destroy` wieder entfernt.
 
 ## State und Git
 

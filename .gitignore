@@ -24,6 +24,7 @@ yarn-error.log*
 *.tfstate
 *.tfstate.*
 *.tfvars
+tfplan
 *.pem
 # Lock-Datei schon committen (feste Provider-Version fuer alle)
 !.terraform.lock.hcl
