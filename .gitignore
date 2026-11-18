@@ -18,3 +18,12 @@ node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# OpenTofu: State, lokale Provider, Variablen-Dateien und Schluessel nie committen
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+*.pem
+# Lock-Datei schon committen (feste Provider-Version fuer alle)
+!.terraform.lock.hcl
