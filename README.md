@@ -36,3 +36,4 @@ Selbst bauen: `./gradlew jar` → `build/libs/tictactest-<version>.jar`.
 - [RELEASE.md](RELEASE.md) – Release-Prozess, [CHANGELOG.md](CHANGELOG.md) – Änderungen pro Version
 - [docs/coverage-design.md](docs/coverage-design.md) – Coverage Time-Series auf GitHub Pages
 - [docs/devcontainer.md](docs/devcontainer.md) – DevContainer und Image-Deployment
+- [docs/webkonsole.md](docs/webkonsole.md) – Im Browser spielen (Web-Konsole ttyd + Frontend)
