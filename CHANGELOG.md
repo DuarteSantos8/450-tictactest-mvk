@@ -3,6 +3,13 @@
 Alle wichtigen Änderungen an TicTacTest. Die Versionsnummern folgen `MAJOR.MINOR.PATCH`
 (siehe [RELEASE.md](RELEASE.md)). Der neuste Release steht immer zuoberst.
 
+## 1.1.0 - 2026-11-18
+
+### Added
+- TicTacTest im Browser spielen: statisches Frontend (`frontend/`), das die Web-Konsole (ttyd) einbettet
+  und die Backend- und Frontend-Version anzeigt (siehe `docs/webkonsole.md`).
+- Der Release enthält zusätzlich das Frontend als Archiv `tictactest-frontend-X.Y.Z.zip` (mit Prüfsumme).
+
 ## 1.0.3 - 2026-10-25
 
 ### Fixed
