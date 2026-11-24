@@ -3,6 +3,11 @@
 Alle wichtigen Änderungen an TicTacTest. Die Versionsnummern folgen `MAJOR.MINOR.PATCH`
 (siehe [RELEASE.md](RELEASE.md)). Der neuste Release steht immer zuoberst.
 
+## 1.2.1 - 2026-11-24
+
+### Changed
+- Frontend: Rahmen um das Terminal ist jetzt blau (Release, der nur das Frontend ändert).
+
 ## 1.2.0 - 2026-11-24
 
 ### Added
