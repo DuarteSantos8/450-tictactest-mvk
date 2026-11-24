@@ -115,6 +115,14 @@ class TicTacToeMainTest implements WithAssertions {
 	}
 
 	@Test
+	@StdIo({ "3", "4", "5" })
+	void mainGreetsThePlayerFirst(StdOut out) {
+		TicTacToeMain.main(new String[0]);
+
+		assertThat(out.capturedString()).startsWith("Welcome to TicTacTest! You play X against the computer (O).\n");
+	}
+
+	@Test
 	@StdIo({ "3", "4", "5" }) // the human (X) plays the middle row, the greedy player only gets 0 and 1
 	void mainLetsTheHumanWinWithTheMiddleRow(StdOut out) {
 		TicTacToeMain.main(new String[0]);
