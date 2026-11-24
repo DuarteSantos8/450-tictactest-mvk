@@ -3,6 +3,12 @@
 Alle wichtigen Änderungen an TicTacTest. Die Versionsnummern folgen `MAJOR.MINOR.PATCH`
 (siehe [RELEASE.md](RELEASE.md)). Der neuste Release steht immer zuoberst.
 
+## 1.2.3 - 2026-11-24
+
+### Changed
+- Spiel: Begrüssung erklärt die Feldnummern 0-8.
+- Frontend: Versionsanzeige ist blau (Release, der Backend und Frontend ändert).
+
 ## 1.2.2 - 2026-11-24
 
 ### Changed
