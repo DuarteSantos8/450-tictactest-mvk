@@ -106,7 +106,7 @@ Lokal liefert `scripts/version-server.py` die Datei aus, in der Cloud macht das 
 | `config.js` | **Konfiguration pro Umgebung**: `terminalUrl` und `versionUrl` |
 
 `config.js` wird vor `app.js` geladen. Im Repo zeigt sie auf `localhost`. In der Cloud schreibt die Infrastruktur
-(OpenTofu) eine eigene `config.js` mit der Adresse des Servers. Darum ist `config.js` **nicht** im Frontend-Archiv vom
+(`infra/setup.sh`) eine eigene `config.js` (siehe [deployment.md](deployment.md)). Darum ist `config.js` **nicht** im Frontend-Archiv vom
 Release: Ein Deployment des Frontends kann die Konfiguration der Umgebung so nicht überschreiben.
 
 **CORS:** Frontend (Port 8000) und Versionsabfrage (Port 7682) sind verschiedene *Origins*. Der Browser erlaubt

@@ -23,17 +23,33 @@ data "aws_ami" "amazon_linux" {
   }
 }
 
+# Im Learner Lab darf man keine eigenen IAM-Rollen anlegen, darum das vorhandene Profil verwenden.
+# Damit darf die Instanz z.B. SSM-Befehle empfangen, ohne dass Access Keys auf der Instanz liegen.
+data "aws_iam_instance_profile" "lab" {
+  name = "LabInstanceProfile"
+}
+
 # Nur der oeffentliche Schluessel geht zu AWS, der private bleibt auf dem eigenen Rechner
 resource "aws_key_pair" "tictactest" {
   key_name   = "tictactest"
   public_key = file(pathexpand(var.public_key_path))
 }
 
-# Firewall: nur SSH (Port 22) rein, raus ist alles erlaubt (z.B. fuer Updates)
+# Firewall: nur das Noetigste rein, raus ist alles erlaubt (Pakete, GitHub-Release-Download, SSM)
 resource "aws_security_group" "tictactest" {
   name        = "tictactest"
-  description = "SSH fuer TicTacTest"
+  description = "Web-Konsole fuer TicTacTest"
 
+  # nginx: Frontend, Terminal (/tty/) und Versionsabfrage fuer alle Spieler
+  ingress {
+    description = "HTTP"
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  # nur zur Fehlersuche, das Deployment laeuft ueber SSM und braucht SSH nicht
   ingress {
     description = "SSH"
     from_port   = 22
@@ -55,8 +71,26 @@ resource "aws_instance" "tictactest" {
   instance_type          = var.instance_type
   key_name               = aws_key_pair.tictactest.key_name
   vpc_security_group_ids = [aws_security_group.tictactest.id]
+  iam_instance_profile   = data.aws_iam_instance_profile.lab.name
+
+  # Richtet die Instanz beim ersten Start ein (Java, ttyd, nginx, Dienst, config.js). Enthaelt KEINE App-Version,
+  # darum muss die Instanz fuer einen neuen Release nicht neu erstellt werden.
+  user_data = templatefile("${path.module}/setup.sh", {
+    ttyd_version = var.ttyd_version
+    ttyd_sha256  = var.ttyd_sha256
+    repo         = var.repo
+  })
+  # user_data laeuft nur beim allerersten Start. Aendert sich die Einrichtung, wird darum eine neue Instanz
+  # erstellt (die Elastic IP bleibt). Danach muss die App neu deployt werden (siehe docs/deployment.md).
+  user_data_replace_on_change = true
 
   tags = {
     Name = "tictactest"
   }
+}
+
+# Feste oeffentliche IP: bleibt gleich, auch wenn das Learner Lab die Instanz stoppt und wieder startet
+resource "aws_eip" "tictactest" {
+  instance = aws_instance.tictactest.id
+  domain   = "vpc"
 }
