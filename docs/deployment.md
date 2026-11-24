@@ -190,8 +190,17 @@ aws configure get aws_session_token     | gh secret set AWS_SESSION_TOKEN
 ```
 
 **Release mit abgelaufenen Credentials:** Der Release selbst wird erstellt (braucht kein AWS). Im Deploy-Job schlägt der
-Schritt *AWS-Zugang pruefen* mit `AWS-Credentials ungueltig oder abgelaufen` fehl, der Lauf ist rot und nichts wird
-halb deployt. Nachholen: Lab starten, Secrets erneuern, dann *Actions → deploy → Run workflow* mit der Version.
+Schritt *AWS-Zugang pruefen* fehl, der Lauf ist rot und nichts wird deployt. Nachholen: Lab starten, Secrets erneuern,
+dann *Actions → deploy → Run workflow* mit der Version.
+
+**Getestet (24.11.2026, neue Lab-Session, Secrets noch alt):** Der [deploy-Lauf](https://github.com/DuarteSantos8/450-tictactest-mvk/actions/runs/45474107000)
+wurde rot, aber erst bei `ssm:SendCommand`:
+`AccessDeniedException ... with an explicit deny in an identity-based policy: .../voc-cancel-cred`.
+Die alten Credentials sind also nicht einfach ungültig, das Lab hängt eine Sperr-Policy an. `aws sts get-caller-identity`
+(unsere erste Prüfung) geht damit noch durch. Darum prüft der Schritt jetzt mit einer echten SSM-Abfrage
+(`aws ssm describe-instance-information`), die gleich gesperrt ist wie das Deployment. Nach dem Erneuern der Secrets
+lief der Deploy wieder grün (siehe Tabelle unten). Die Instanz lief nach dem Lab-Neustart mit derselben IP und
+derselben Version weiter.
 
 **Wer sieht oder benutzt die Secrets?**
 - Sehen: niemand, auch Admins können sie nur überschreiben.
@@ -288,6 +297,8 @@ Live-Versionen jeweils danach mit `curl <APP_URL>/backend/version.txt` und `curl
 | Rollback auf 1.1.0 | [deploy 1.1.0](https://github.com/DuarteSantos8/450-tictactest-mvk/actions/runs/45429101717) | grün nach 18 s | 1.1.0 / 1.1.0 |
 | Fehlerfall: 1.0.3 (hat kein Frontend-Archiv) | [deploy 1.0.3](https://github.com/DuarteSantos8/450-tictactest-mvk/actions/runs/45429203310) | **rot**: Backend deployt, Frontend `curl: (22) … 404`, Lauf schlägt fehl | 1.0.3 / 1.1.0 (gemischt!) |
 | wieder auf aktuelle Version | [deploy 1.2.3](https://github.com/DuarteSantos8/450-tictactest-mvk/actions/runs/45429301484) | grün nach 23 s | 1.2.3 / 1.2.3 |
+| neue Lab-Session, Secrets noch alt | [deploy 1.2.3](https://github.com/DuarteSantos8/450-tictactest-mvk/actions/runs/45474107000) | **rot**: `AccessDenied ... voc-cancel-cred` | 1.2.3 / 1.2.3 (lief nach Lab-Neustart weiter) |
+| Secrets erneuert, nachgeholt | [deploy 1.2.3](https://github.com/DuarteSantos8/450-tictactest-mvk/actions/runs/45476089874) | grün | 1.2.3 / 1.2.3 |
 
 **Erkenntnisse:**
 - Die Änderungserkennung funktioniert: Bei 1.2.1 blieb das Backend auf 1.1.1, bei 1.2.2 das Frontend auf 1.2.1.
