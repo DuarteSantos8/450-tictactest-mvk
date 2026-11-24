@@ -119,7 +119,7 @@ class TicTacToeMainTest implements WithAssertions {
 	void mainGreetsThePlayerFirst(StdOut out) {
 		TicTacToeMain.main(new String[0]);
 
-		assertThat(out.capturedString()).startsWith("Welcome to TicTacTest! You play X against the computer (O).\n");
+		assertThat(out.capturedString()).startsWith("Welcome to TicTacTest! You play X against the computer (O). Fields are numbered 0-8.\n");
 	}
 
 	@Test
