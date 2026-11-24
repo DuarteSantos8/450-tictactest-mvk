@@ -1,0 +1,52 @@
+name: deploy
+
+# Eine bereits veroeffentlichte Version gezielt deployen (Rollback, Wiederaufbau nach tofu destroy,
+# Nachholen nach abgelaufenen Credentials). Deployt Backend UND Frontend dieser Version.
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version ohne v, z.B. 1.1.0'
+        required: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    # gleiche Gruppe wie der Deploy-Job in release.yml: nie zwei Deployments gleichzeitig
+    concurrency:
+      group: deploy
+      cancel-in-progress: false
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
+      AWS_DEFAULT_REGION: us-east-1
+      INSTANCE_ID: ${{ vars.INSTANCE_ID }}
+      APP_URL: ${{ vars.APP_URL }}
+      # Eingabe ueber eine Variable statt direkt im Skript (sonst koennte die Eingabe Befehle einschleusen)
+      VERSION: ${{ inputs.version }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Version pruefen
+        run: |
+          if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::'$VERSION' ist keine Version wie 1.1.0"
+            exit 1
+          fi
+          # nur veroeffentlichte Releases
+          gh release view "v$VERSION" > /dev/null
+
+      - name: AWS-Zugang pruefen
+        run: |
+          if ! aws sts get-caller-identity > /dev/null; then
+            echo "::error::AWS-Credentials ungueltig oder abgelaufen. Secrets erneuern und erneut starten."
+            exit 1
+          fi
+
+      - name: Backend deployen
+        run: scripts/deploy.sh backend "$VERSION"
+
+      - name: Frontend deployen
+        run: scripts/deploy.sh frontend "$VERSION"
