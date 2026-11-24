@@ -3,6 +3,12 @@
 Alle wichtigen Änderungen an TicTacTest. Die Versionsnummern folgen `MAJOR.MINOR.PATCH`
 (siehe [RELEASE.md](RELEASE.md)). Der neuste Release steht immer zuoberst.
 
+## 1.2.0 - 2026-11-24
+
+### Added
+- Automatisches Deployment nach jedem Release, nur für die Teile, die sich seit dem letzten Release geändert haben
+  (Backend und/oder Frontend), plus Workflow `deploy` für eine bestimmte Version (siehe `docs/deployment.md`).
+
 ## 1.1.1 - 2026-11-24
 
 ### Changed

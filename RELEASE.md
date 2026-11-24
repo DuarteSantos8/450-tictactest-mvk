@@ -21,6 +21,8 @@ Bedingungen prüfen → Tests → Build → JAR erstellen → JAR testen → Fro
     ↓
 GitHub Release erstellen + JAR und Frontend-Archiv anhängen
     ↓
+Deploy-Job: geänderte Teile auf EC2 deployen (siehe docs/deployment.md)
+    ↓
 JAR herunterladen und testen
 ```
 
