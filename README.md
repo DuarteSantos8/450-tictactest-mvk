@@ -2,7 +2,7 @@
 
 TicTacToe-Spiel in Java, das im Modul 450 (Applikationen testen) mit Tests abgesichert wird.
 
-**Im Browser spielen:** <http://34.199.145.79/> (läuft auf EC2 im AWS Learner Lab, nur während einer aktiven Lab-Session, siehe [docs/deployment.md](docs/deployment.md))
+**Im Browser spielen:** <http://34.199.145.79/> (läuft auf EC2 im AWS Learner Lab und ist nur erreichbar, solange eine Lab-Session läuft. Nachweis mit Screenshots und Workflow-Läufen in [docs/deployment.md](docs/deployment.md))
 
 ## Voraussetzungen
 

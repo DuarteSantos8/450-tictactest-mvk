@@ -40,7 +40,9 @@ jobs:
 
       - name: AWS-Zugang pruefen
         run: |
-          if ! aws sts get-caller-identity > /dev/null; then
+          # sts get-caller-identity reicht nicht: alte Lab-Credentials funktionieren dafuer noch,
+          # alles andere sperrt das Lab (Policy voc-cancel-cred). Darum eine echte SSM-Abfrage.
+          if ! aws ssm describe-instance-information --filters "Key=InstanceIds,Values=$INSTANCE_ID" > /dev/null; then
             echo "::error::AWS-Credentials ungueltig oder abgelaufen. Secrets erneuern und erneut starten."
             exit 1
           fi
