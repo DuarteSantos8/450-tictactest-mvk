@@ -274,17 +274,30 @@ gh variable set APP_URL     --body "http://$(tofu -chdir=infra output -raw publi
 gh workflow run deploy -f version=1.1.1
 ```
 
-## Nachweis der Trennung
+## Nachweis der Trennung (24.11.2026)
 
-| Fall | Release / Lauf | Ergebnis |
-|---|---|---|
-| nur Doku/Pipeline (erster Release mit Deploy-Job) | _folgt_ | |
-| nur Frontend | _folgt_ | |
-| nur Backend | _folgt_ | |
-| beides | _folgt_ | |
-| Push auf `main` ohne Tag | _folgt_ | |
-| Rollback | _folgt_ | |
-| Fehlerfall | _folgt_ | |
+Live-Versionen jeweils danach mit `curl <APP_URL>/backend/version.txt` und `curl <APP_URL>/version.txt` geprüft.
+
+| Fall | Lauf | Deploy-Job | Backend / Frontend danach |
+|---|---|---|---|
+| nur Pipeline/Doku (`v1.2.0`) | [release v1.2.0](https://github.com/DuarteSantos8/450-tictactest-mvk/actions/runs/45424617429) | `backend=false`, `frontend=false`, nichts deployt | 1.1.1 / 1.1.1 (unverändert) |
+| nur Frontend (`v1.2.1`, Terminal-Rahmen blau) | [release v1.2.1](https://github.com/DuarteSantos8/450-tictactest-mvk/actions/runs/45428032000) | nur *Frontend deployen* | **1.1.1** / 1.2.1 |
+| nur Backend (`v1.2.2`, Begrüssung im Spiel) | [release v1.2.2](https://github.com/DuarteSantos8/450-tictactest-mvk/actions/runs/45428487025) | nur *Backend deployen* | 1.2.2 / **1.2.1** |
+| beides (`v1.2.3`) | [release v1.2.3](https://github.com/DuarteSantos8/450-tictactest-mvk/actions/runs/45428820513) | *Backend* und *Frontend deployen* | 1.2.3 / 1.2.3 |
+| Push auf `main` ohne Tag (Merge von #23) | [build](https://github.com/DuarteSantos8/450-tictactest-mvk/actions/runs/45428812297) | es laufen nur `build` und `coverage-pages`, **kein** `release`/`deploy` | unverändert |
+| Rollback auf 1.1.0 | [deploy 1.1.0](https://github.com/DuarteSantos8/450-tictactest-mvk/actions/runs/45429101717) | grün nach 18 s | 1.1.0 / 1.1.0 |
+| Fehlerfall: 1.0.3 (hat kein Frontend-Archiv) | [deploy 1.0.3](https://github.com/DuarteSantos8/450-tictactest-mvk/actions/runs/45429203310) | **rot**: Backend deployt, Frontend `curl: (22) … 404`, Lauf schlägt fehl | 1.0.3 / 1.1.0 (gemischt!) |
+| wieder auf aktuelle Version | [deploy 1.2.3](https://github.com/DuarteSantos8/450-tictactest-mvk/actions/runs/45429301484) | grün nach 23 s | 1.2.3 / 1.2.3 |
+
+**Erkenntnisse:**
+- Die Änderungserkennung funktioniert: Bei 1.2.1 blieb das Backend auf 1.1.1, bei 1.2.2 das Frontend auf 1.2.1.
+- Der Fehlerfall wird erkannt (roter Lauf), aber er hinterlässt einen gemischten Zustand, weil das Backend schon
+  deployt war. Das Frontend blieb wenigstens auf der alten Version stehen. Wieder eine funktionierende Version laufen
+  zu haben, dauerte mit `deploy` weniger als eine halbe Minute. Besser wäre: zuerst prüfen, ob **alle** Assets der
+  Version existieren, erst dann deployen.
+- Ein JAR, das nicht startet, würde der Smoke-Test (`where to put` muss erscheinen) erkennen. Das alte JAR ist dann
+  aber schon ersetzt, also gleich wie oben: rot und mit `deploy` die letzte gute Version nachschieben.
+- In den Logs erscheinen die Secrets nur als `***` (kontrolliert mit `gh run view --log`).
 
 ## Reflexion: Umgebungen und Promotion
 
