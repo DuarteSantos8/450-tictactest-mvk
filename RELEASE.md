@@ -17,9 +17,9 @@ Git-Tag vX.Y.Z auf den main-Commit setzen und pushen
     ↓
 GitHub Actions (release.yml) startet
     ↓
-Bedingungen prüfen → Tests → Build → JAR erstellen → JAR testen
+Bedingungen prüfen → Tests → Build → JAR erstellen → JAR testen → Frontend-Archiv erstellen
     ↓
-GitHub Release erstellen + JAR anhängen
+GitHub Release erstellen + JAR und Frontend-Archiv anhängen
     ↓
 JAR herunterladen und testen
 ```
@@ -109,6 +109,7 @@ Mit Gradle: `./gradlew jar` erzeugt `build/libs/tictactest-X.Y.Z.jar`. Im Manife
 **Wo kann das JAR heruntergeladen werden?**
 Auf GitHub unter **Releases** (`https://github.com/DuarteSantos8/450-tictactest-mvk/releases`),
 bei jedem Release unter „Assets“. Dazu gibt es eine `.sha256`-Datei mit der Prüfsumme.
+Seit 1.1.0 liegt dort auch das Frontend als `tictactest-frontend-X.Y.Z.zip` (siehe [docs/webkonsole.md](docs/webkonsole.md)).
 
 **Was enthält das Changelog?**
 Pro Version: Versionsnummer, Datum und was sich für Benutzer oder Entwickler geändert hat,
