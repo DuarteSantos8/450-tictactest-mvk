@@ -14,6 +14,7 @@ public class TicTacToeMain {
 	public static final int BOARD_SIZE = 9;
 
 	public static void main(String[] args) {
+		System.out.println("Welcome to TicTacTest! You play X against the computer (O).");
 		try {
 			play(new HumanPlayer(), new GreedyPlayer());
 		} catch (IllegalStateException e) {
