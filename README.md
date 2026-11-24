@@ -2,6 +2,8 @@
 
 TicTacToe-Spiel in Java, das im Modul 450 (Applikationen testen) mit Tests abgesichert wird.
 
+**Im Browser spielen:** <http://34.199.145.79/> (läuft auf EC2 im AWS Learner Lab, nur während einer aktiven Lab-Session, siehe [docs/deployment.md](docs/deployment.md))
+
 ## Voraussetzungen
 
 - Java 25 (am einfachsten über den DevContainer, siehe [docs/devcontainer.md](docs/devcontainer.md))
@@ -38,3 +40,4 @@ Selbst bauen: `./gradlew jar` → `build/libs/tictactest-<version>.jar`.
 - [docs/devcontainer.md](docs/devcontainer.md) – DevContainer und Image-Deployment
 - [docs/webkonsole.md](docs/webkonsole.md) – Im Browser spielen (Web-Konsole ttyd + Frontend)
 - [docs/iac.md](docs/iac.md) – Infrastruktur mit OpenTofu (EC2 im AWS Learner Lab)
+- [docs/deployment.md](docs/deployment.md) – Deployment der Web-App auf EC2
